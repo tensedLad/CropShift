@@ -1,0 +1,303 @@
+<!DOCTYPE html>
+<html class="dark" lang="en">
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>CropShift - Premium Document Scanner</title>
+    <script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Manrope:wght@400;500;600;700;800&family=Inter:wght@400;500;600&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&display=swap" rel="stylesheet">
+    <style>
+        .material-symbols-outlined {
+            font-variation-settings: 'FILL' 0, 'wght' 400, 'GRAD' 0, 'opsz' 24;
+        }
+        .pro-scrollbar::-webkit-scrollbar {
+            width: 4px;
+        }
+        .pro-scrollbar::-webkit-scrollbar-track {
+            background: transparent;
+        }
+        .pro-scrollbar::-webkit-scrollbar-thumb {
+            background: #444;
+            border-radius: 2px;
+        }
+        .is-hidden {
+            display: none !important;
+        }
+        .is-dragging {
+            border-color: #1473e6 !important;
+            background-color: rgba(20, 115, 230, 0.1) !important;
+        }
+        
+        /* Split-pane divider */
+        .split-divider {
+            width: 6px;
+            cursor: col-resize;
+            background: #333;
+            position: relative;
+            z-index: 15;
+            flex-shrink: 0;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            transition: background 0.15s;
+        }
+        .split-divider:hover, .split-divider.is-active {
+            background: #1473e6;
+        }
+        .split-divider .grip {
+            width: 2px;
+            height: 32px;
+            border-left: 1px solid rgba(255,255,255,0.2);
+            border-right: 1px solid rgba(255,255,255,0.2);
+        }
+        .split-divider:hover .grip, .split-divider.is-active .grip {
+            border-color: rgba(255,255,255,0.5);
+        }
+        body.is-resizing * {
+            cursor: col-resize !important;
+            user-select: none !important;
+        }
+        
+        #sourceCanvas {
+            cursor: crosshair;
+            touch-action: none;
+        }
+        
+        /* Quality input spinner hide */
+        #qualityInput::-webkit-outer-spin-button,
+        #qualityInput::-webkit-inner-spin-button {
+            -webkit-appearance: none;
+            margin: 0;
+        }
+        #qualityInput[type=number] {
+            -moz-appearance: textfield;
+        }
+    </style>
+    <script id="tailwind-config">
+        tailwind.config = {
+          darkMode: "class",
+          theme: {
+            extend: {
+              colors: {
+                "primary-container": "#1473e6",
+              },
+              fontFamily: {
+                "label-caps": ["Inter"],
+                "headline-md": ["Manrope"],
+                "body-sm": ["Inter"],
+                "body-lg": ["Inter"],
+                "headline-xl": ["Manrope"]
+              }
+            }
+          }
+        }
+    </script>
+</head>
+<body class="bg-zinc-900 text-[#e5e2e1] font-body-lg selection:bg-[#1473e6] selection:text-white antialiased overflow-hidden h-screen flex flex-col">
+
+<!-- Top Navigation -->
+<nav class="bg-zinc-800 font-['Manrope'] h-14 border-b border-zinc-700 fixed top-0 left-0 w-full z-50 flex justify-between items-center px-6">
+    <div class="flex items-center gap-4">
+        <span class="text-lg font-black text-white tracking-widest uppercase">CropShift</span>
+        <div class="h-5 w-px bg-zinc-700 mx-1"></div>
+        <span class="text-blue-500 font-bold border-b-2 border-blue-500 h-14 flex items-center px-2 cursor-pointer text-sm">Workspace</span>
+    </div>
+    <div class="flex items-center gap-4">
+        
+        <!-- Controls -->
+        <div class="flex items-center gap-2">
+            <div class="hidden">
+                <span id="engineStatus">Ready</span>
+                <p id="statusMessage" role="status">Load an image</p>
+            </div>
+            <button id="resetButton" disabled class="bg-zinc-700/50 text-zinc-300 px-3 py-1 text-[10px] font-bold uppercase tracking-wider flex items-center gap-1.5 hover:bg-zinc-600 disabled:opacity-40 disabled:cursor-not-allowed transition-colors border border-zinc-600 rounded">
+                <span class="material-symbols-outlined text-[14px]">refresh</span> Reset
+            </button>
+            <button id="fitButton" disabled class="bg-zinc-700/50 text-zinc-300 px-3 py-1 text-[10px] font-bold uppercase tracking-wider flex items-center gap-1.5 hover:bg-zinc-600 disabled:opacity-40 disabled:cursor-not-allowed transition-colors border border-zinc-600 rounded">
+                <span class="material-symbols-outlined text-[14px]">fit_screen</span> Fit
+            </button>
+            <button id="clearButton" disabled class="bg-zinc-700/50 text-zinc-300 px-3 py-1 text-[10px] font-bold uppercase tracking-wider flex items-center gap-1.5 hover:bg-zinc-600 disabled:opacity-40 disabled:cursor-not-allowed transition-colors border border-zinc-600 rounded">
+                <span class="material-symbols-outlined text-[14px]">delete_sweep</span> Clear
+            </button>
+        </div>
+
+        <div class="h-7 w-px bg-zinc-700"></div>
+
+        <!-- Metadata -->
+        <div class="flex items-center gap-5">
+            <div class="flex flex-col items-end">
+                <span class="text-[8px] font-bold text-zinc-500 uppercase tracking-widest">File</span>
+                <span id="fileName" class="text-[10px] font-mono text-zinc-300 truncate max-w-[120px]">None loaded</span>
+            </div>
+            <div class="h-7 w-px bg-zinc-700/50"></div>
+            <div class="flex flex-col items-end">
+                <span class="text-[8px] font-bold text-zinc-500 uppercase tracking-widest">Size</span>
+                <span id="imageSize" class="text-[10px] font-mono text-zinc-300">-</span>
+            </div>
+            <div class="h-7 w-px bg-zinc-700/50"></div>
+            <div class="flex flex-col items-end">
+                <span class="text-[8px] font-bold text-zinc-500 uppercase tracking-widest">Export</span>
+                <span id="selectionSize" class="text-[10px] font-mono text-zinc-300">-</span>
+            </div>
+        </div>
+    </div>
+</nav>
+
+<!-- Sidebar -->
+<aside class="fixed left-0 top-14 w-[260px] h-[calc(100vh-56px)] border-r bg-zinc-800 border-zinc-700 flex flex-col py-4 space-y-2 z-40 overflow-y-auto pro-scrollbar">
+    
+    <!-- Hidden File Input -->
+    <input id="fileInput" type="file" accept="image/*" class="hidden">
+
+    <div class="px-4">
+        <h3 class="text-[10px] font-bold uppercase tracking-wider text-zinc-500 mb-3 font-label-caps">Upload Area</h3>
+        <button id="uploadZone" type="button" class="w-full border-2 border-dashed border-zinc-600 rounded-lg p-5 flex flex-col items-center justify-center text-center gap-2 hover:border-[#1473e6] transition-colors group cursor-pointer bg-zinc-800/20 outline-none">
+            <span class="material-symbols-outlined text-2xl text-zinc-600 group-hover:text-blue-500 transition-colors" data-icon="cloud_upload">cloud_upload</span>
+            <p class="text-[10px] font-bold text-zinc-400 uppercase tracking-tight">Drop documents here<br/>or click to upload</p>
+        </button>
+    </div>
+
+    <!-- Ad Slots -->
+    <div class="px-4 mt-4 pb-4 space-y-3 flex-1">
+        <h3 class="text-[10px] font-bold uppercase tracking-wider text-zinc-500 mb-2 font-label-caps">Sponsored</h3>
+        <div class="h-28 w-full bg-blue-900/10 rounded flex items-center justify-center overflow-hidden border border-blue-900/30">
+            <span class="text-[9px] font-bold text-blue-500 uppercase tracking-widest">Ad Slot 1</span>
+        </div>
+        <div class="h-28 w-full bg-blue-900/10 rounded flex items-center justify-center overflow-hidden border border-blue-900/30">
+            <span class="text-[9px] font-bold text-blue-500 uppercase tracking-widest">Ad Slot 2</span>
+        </div>
+        <div class="h-28 w-full bg-blue-900/10 rounded flex items-center justify-center overflow-hidden border border-blue-900/30">
+            <span class="text-[9px] font-bold text-blue-500 uppercase tracking-widest">Ad Slot 3</span>
+        </div>
+        <div class="h-28 w-full bg-blue-900/10 rounded flex items-center justify-center overflow-hidden border border-blue-900/30">
+            <span class="text-[9px] font-bold text-blue-500 uppercase tracking-widest">Ad Slot 4</span>
+        </div>
+        <div class="h-28 w-full bg-blue-900/10 rounded flex items-center justify-center overflow-hidden border border-blue-900/30">
+            <span class="text-[9px] font-bold text-blue-500 uppercase tracking-widest">Ad Slot 5</span>
+        </div>
+    </div>
+</aside>
+
+<!-- Main Workspace -->
+<main class="ml-[260px] pt-14 h-screen flex flex-col bg-zinc-900">
+    <div id="splitContainer" class="flex-1 flex overflow-hidden">
+        
+        <!-- Source Pane -->
+        <div id="sourcePane" class="flex flex-col relative" style="flex-basis: 50%; min-width: 200px;">
+            <div class="h-9 px-4 flex items-center justify-between bg-zinc-800 border-b border-zinc-700 z-10 shrink-0">
+                <span class="text-[10px] font-bold text-zinc-400 uppercase tracking-widest">Source</span>
+            </div>
+            <!-- Canvas Container -->
+            <div class="flex-1 relative flex items-center justify-center p-4 overflow-hidden" style="background-image: radial-gradient(#3a3a3a 1px, transparent 1px); background-size: 20px 20px;">
+                <canvas id="sourceCanvas" class="relative z-10 shadow-2xl rounded-sm"></canvas>
+                <div id="emptyState" class="absolute inset-0 m-6 border border-dashed border-zinc-700 rounded-lg flex flex-col items-center justify-center gap-2 text-zinc-500 pointer-events-none bg-zinc-900/50 backdrop-blur-sm z-20">
+                    <span class="material-symbols-outlined text-4xl">document_scanner</span>
+                    <strong class="text-zinc-300 font-['Manrope'] text-lg">Drop an image here</strong>
+                    <span class="text-xs">Your file stays in this browser tab.</span>
+                </div>
+            </div>
+        </div>
+
+        <!-- Draggable Divider -->
+        <div id="splitDivider" class="split-divider"><div class="grip"></div></div>
+
+        <!-- Preview Pane -->
+        <div id="previewPane" class="flex flex-col relative" style="flex-basis: 50%; min-width: 200px;">
+            <div class="h-9 px-4 flex items-center justify-between bg-zinc-800 border-b border-zinc-700 z-10 shrink-0">
+                <span class="text-[10px] font-bold text-zinc-400 uppercase tracking-widest">Preview</span>
+                <span id="previewInfo" class="px-2 py-0.5 bg-zinc-700 text-zinc-300 text-[9px] font-bold rounded">Output</span>
+            </div>
+            <!-- Preview Canvas Area (fills most of the pane) -->
+            <div class="flex-1 relative flex items-center justify-center p-4 overflow-hidden" style="background-image: radial-gradient(#3a3a3a 1px, transparent 1px); background-size: 20px 20px;">
+                <canvas id="previewCanvas" class="relative z-10 shadow-2xl rounded-sm"></canvas>
+                <div id="previewEmpty" class="absolute inset-0 m-6 flex items-center justify-center text-zinc-600 font-bold uppercase tracking-widest text-xs pointer-events-none z-20">
+                    Waiting for image
+                </div>
+            </div>
+            <!-- Export Controls (inside preview pane, below canvas) -->
+            <div class="shrink-0 bg-zinc-800 border-t border-zinc-700 px-4 py-3 flex items-center justify-between gap-4">
+                
+                <div class="flex items-center gap-3">
+                    <!-- Format -->
+                    <div class="flex items-center gap-2">
+                        <label for="formatSelect" class="text-zinc-500 text-[9px] font-black uppercase tracking-wider">Format</label>
+                        <select id="formatSelect" class="bg-zinc-700 border border-zinc-600 text-zinc-100 font-bold text-[11px] focus:ring-1 focus:ring-blue-500 cursor-pointer rounded px-2 py-1 outline-none">
+                            <option value="image/jpeg" class="bg-zinc-800">JPG</option>
+                            <option value="image/png" class="bg-zinc-800">PNG</option>
+                        </select>
+                    </div>
+                    
+                    <!-- Quality -->
+                    <div class="flex items-center gap-2">
+                        <label id="qualityLabel" for="qualityInput" class="text-zinc-500 text-[9px] font-black uppercase tracking-wider">Quality</label>
+                        <div class="relative flex items-center">
+                            <input id="qualityInput" type="number" min="65" max="100" value="100" class="bg-zinc-700 border border-zinc-600 text-zinc-100 font-mono font-bold text-[11px] w-14 text-center rounded px-1 py-1 focus:ring-1 focus:ring-blue-500 outline-none">
+                            <span class="text-zinc-400 text-[10px] font-bold ml-1">%</span>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Download -->
+                <button id="downloadButton" disabled class="text-white bg-[#1473e6] px-5 py-2 rounded-lg hover:bg-blue-600 active:scale-95 disabled:opacity-40 disabled:hover:bg-[#1473e6] disabled:cursor-not-allowed transition-all flex items-center gap-2 text-[11px] font-bold uppercase tracking-wider">
+                    <span class="material-symbols-outlined text-[16px]">download</span> Download
+                </button>
+            </div>
+        </div>
+
+    </div>
+</main>
+
+<!-- OpenCV.js for auto document detection -->
+<script async src="https://docs.opencv.org/4.9.0/opencv.js" onload="onOpenCvReady()" type="text/javascript"></script>
+<script src="app.js"></script>
+
+<!-- Split-pane drag logic -->
+<script>
+(function() {
+  const divider = document.getElementById('splitDivider');
+  const container = document.getElementById('splitContainer');
+  const sourcePane = document.getElementById('sourcePane');
+  const previewPane = document.getElementById('previewPane');
+  let isDragging = false;
+
+  divider.addEventListener('pointerdown', (e) => {
+    e.preventDefault();
+    isDragging = true;
+    divider.classList.add('is-active');
+    document.body.classList.add('is-resizing');
+    divider.setPointerCapture(e.pointerId);
+  });
+
+  divider.addEventListener('pointermove', (e) => {
+    if (!isDragging) return;
+    const rect = container.getBoundingClientRect();
+    const totalWidth = rect.width - 6; // minus divider width
+    const offsetX = e.clientX - rect.left;
+    let ratio = offsetX / rect.width;
+    ratio = Math.max(0.2, Math.min(0.8, ratio)); // clamp 20%-80%
+    const sourceW = ratio * 100;
+    const previewW = 100 - sourceW;
+    sourcePane.style.flexBasis = sourceW + '%';
+    previewPane.style.flexBasis = previewW + '%';
+    // Trigger canvas resize
+    if (typeof resizeCanvases === 'function') {
+      resizeCanvases();
+      drawSource();
+      queuePreviewRender();
+    }
+  });
+
+  const stopDrag = () => {
+    if (!isDragging) return;
+    isDragging = false;
+    divider.classList.remove('is-active');
+    document.body.classList.remove('is-resizing');
+  };
+
+  divider.addEventListener('pointerup', stopDrag);
+  divider.addEventListener('pointercancel', stopDrag);
+})();
+</script>
+</body>
+</html>
