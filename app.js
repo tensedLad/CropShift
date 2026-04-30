@@ -61,13 +61,17 @@ function bindElements() {
     "emptyState",
     "previewEmpty",
     "previewInfo",
-    "formatSelect",
+    "formatGroup",
     "qualityInput",
     "qualityLabel",
     "downloadButton"
   ].forEach((id) => {
     els[id] = document.getElementById(id);
   });
+
+  // Store selected format state
+  state.selectedFormat = "image/jpeg";
+  state.selectedExt = "jpg";
 }
 
 function bindEvents() {
@@ -118,9 +122,11 @@ function bindEvents() {
 
   els.clearButton.addEventListener("click", clearImage);
 
-  els.formatSelect.addEventListener("change", () => {
-    setDownloadQualityVisibility();
-    queuePreviewRender();
+  // Format toggle buttons
+  els.formatGroup.querySelectorAll(".format-btn").forEach((btn) => {
+    btn.addEventListener("click", () => {
+      selectFormatButton(btn);
+    });
   });
 
   els.qualityInput.addEventListener("change", () => {
@@ -158,6 +164,7 @@ async function loadFile(file) {
     setControlsEnabled(true);
     els.emptyState.classList.add("is-hidden");
     els.previewEmpty.classList.add("is-hidden");
+    autoSelectFormat(file.name);
     setStatus("Drag a corner handle to shape the crop.");
     afterCornerChange();
   } catch (error) {
@@ -442,10 +449,10 @@ async function downloadCrop() {
     canvas.height = height;
     canvas.getContext("2d").putImageData(imageData, 0, 0);
 
-    const mime = els.formatSelect.value;
+    const mime = state.selectedFormat;
     const quality = Math.max(0.65, Math.min(1, parseInt(els.qualityInput.value, 10) / 100));
     const blob = await canvasToBlob(canvas, mime, quality);
-    const extension = mime === "image/jpeg" ? "jpg" : "png";
+    const extension = state.selectedExt;
     const baseName = state.fileName ? state.fileName.replace(/\.[^/.]+$/, "") : "output";
     const link = document.createElement("a");
     link.href = URL.createObjectURL(blob);
@@ -762,10 +769,32 @@ function setControlsEnabled(enabled) {
 }
 
 function setDownloadQualityVisibility() {
-  const isJpg = els.formatSelect.value === "image/jpeg";
-  els.qualityInput.disabled = !isJpg;
-  els.qualityLabel.style.opacity = isJpg ? "1" : "0.45";
-  els.qualityInput.style.opacity = isJpg ? "1" : "0.45";
+  const supportsQuality = state.selectedFormat === "image/jpeg" || state.selectedFormat === "image/webp";
+  els.qualityInput.disabled = !supportsQuality;
+  els.qualityLabel.style.opacity = supportsQuality ? "1" : "0.45";
+  els.qualityInput.style.opacity = supportsQuality ? "1" : "0.45";
+}
+
+function selectFormatButton(btn) {
+  // Deselect all
+  els.formatGroup.querySelectorAll(".format-btn").forEach((b) => {
+    b.classList.remove("bg-[#1473e6]", "text-white");
+    b.classList.add("bg-zinc-700", "text-zinc-400");
+  });
+  // Select clicked
+  btn.classList.remove("bg-zinc-700", "text-zinc-400");
+  btn.classList.add("bg-[#1473e6]", "text-white");
+  state.selectedFormat = btn.dataset.format;
+  state.selectedExt = btn.dataset.ext;
+  setDownloadQualityVisibility();
+}
+
+function autoSelectFormat(fileName) {
+  const ext = fileName.split(".").pop().toLowerCase();
+  const map = { jpg: "jpg", jpeg: "jpeg", png: "png", webp: "webp" };
+  const targetExt = map[ext] || "jpg";
+  const btn = els.formatGroup.querySelector(`[data-ext="${targetExt}"]`);
+  if (btn) selectFormatButton(btn);
 }
 
 function setBusy(message) {
