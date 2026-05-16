@@ -1020,99 +1020,121 @@ function formatMegaPixels(pixelCount) {
 function autoDetectCorners() {
   if (!state.cvReady || !state.image) return false;
 
-  let src = null;
-  let gray = null;
-  let blurred = null;
-  let edged = null;
-  let kernel = null;
-  let contours = null;
-  let hierarchy = null;
-  let bestContour = null;
+  // Track every allocated Mat for guaranteed cleanup
+  const cleanup = [];
+  const track = (m) => { cleanup.push(m); return m; };
+  let bestQuad = null;
 
   try {
-    const tempCanvas = document.createElement("canvas");
-    const maxDim = 800;
-    let w = state.image.naturalWidth;
-    let h = state.image.naturalHeight;
-    const scale = Math.min(1, maxDim / Math.max(w, h));
-    w = Math.round(w * scale);
-    h = Math.round(h * scale);
-    tempCanvas.width = w;
-    tempCanvas.height = h;
-    const tctx = tempCanvas.getContext("2d");
-    tctx.drawImage(state.image, 0, 0, w, h);
+    const maxDim = 1000;
+    let srcW = state.image.naturalWidth;
+    let srcH = state.image.naturalHeight;
+    const scale = Math.min(1, maxDim / Math.max(srcW, srcH));
+    const w = Math.round(srcW * scale);
+    const h = Math.round(srcH * scale);
 
-    src = cv.imread(tempCanvas);
-    gray = new cv.Mat();
-    blurred = new cv.Mat();
-    edged = new cv.Mat();
+    const tmp = document.createElement("canvas");
+    tmp.width = w; tmp.height = h;
+    tmp.getContext("2d").drawImage(state.image, 0, 0, w, h);
+
+    const src   = track(cv.imread(tmp));
+    const gray  = track(new cv.Mat());
+    const blur  = track(new cv.Mat());
+    const edges = track(new cv.Mat());
+    const cnts  = track(new cv.MatVector());
+    const hier  = track(new cv.Mat());
 
     cv.cvtColor(src, gray, cv.COLOR_RGBA2GRAY);
-    cv.GaussianBlur(gray, blurred, new cv.Size(5, 5), 0);
-    cv.Canny(blurred, edged, 50, 150);
+    cv.GaussianBlur(gray, blur, new cv.Size(5, 5), 0);
 
-    kernel = cv.Mat.ones(3, 3, cv.CV_8U);
-    cv.dilate(edged, edged, kernel);
+    // 75/200: reduces false edges from textured backgrounds (leather, fabric, etc.)
+    cv.Canny(blur, edges, 75, 200);
 
-    contours = new cv.MatVector();
-    hierarchy = new cv.Mat();
-    cv.findContours(edged, contours, hierarchy, cv.RETR_EXTERNAL, cv.CHAIN_APPROX_SIMPLE);
+    // Dilate then morphological close to bridge gaps in document edges
+    const k3 = track(cv.Mat.ones(3, 3, cv.CV_8U));
+    const k5 = track(cv.getStructuringElement(cv.MORPH_RECT, new cv.Size(5, 5)));
+    cv.dilate(edges, edges, k3);
+    cv.morphologyEx(edges, edges, cv.MORPH_CLOSE, k5);
 
-    let bestArea = 0;
+    cv.findContours(edges, cnts, hier, cv.RETR_EXTERNAL, cv.CHAIN_APPROX_SIMPLE);
+
     const imgArea = w * h;
+    let bestScore = -1;
 
-    for (let i = 0; i < contours.size(); i++) {
-      const contour = contours.get(i);
-      try {
-        const area = cv.contourArea(contour);
-        if (area < imgArea * 0.05) continue;
+    // Try multiple epsilon values so a single bad approx won't miss the document
+    const EPS = [0.01, 0.015, 0.02, 0.03, 0.04, 0.05];
 
-        const peri = cv.arcLength(contour, true);
+    for (let i = 0; i < cnts.size(); i++) {
+      const cnt  = cnts.get(i);
+      const area = cv.contourArea(cnt);
+
+      if (area < imgArea * 0.04) { cnt.delete(); continue; }
+
+      const peri = cv.arcLength(cnt, true);
+      cnt.delete();
+
+      for (const eps of EPS) {
+        const c2     = cnts.get(i);
         const approx = new cv.Mat();
-        cv.approxPolyDP(contour, approx, 0.02 * peri, true);
+        cv.approxPolyDP(c2, approx, eps * peri, true);
+        c2.delete();
 
-        if (approx.rows === 4 && area > bestArea) {
-          if (bestContour) bestContour.delete();
-          bestArea = area;
-          bestContour = approx;
+        if (approx.rows === 4 && cv.isContourConvex(approx)) {
+          const qArea = cv.contourArea(approx);
+          const rect  = cv.boundingRect(approx);
+          const rArea = rect.width * rect.height;
+
+          if (qArea >= imgArea * 0.04 && rArea > 0) {
+            // Score = area-coverage * rectangularity^2
+            // High rectangularity means the quad closely fills its bounding box
+            const rectRatio = qArea / rArea;
+            const score = (qArea / imgArea) * rectRatio * rectRatio;
+
+            if (score > bestScore) {
+              if (bestQuad) bestQuad.delete();
+              bestScore = score;
+              bestQuad  = approx;
+            } else {
+              approx.delete();
+            }
+          } else {
+            approx.delete();
+          }
+          break; // found best 4-point for this contour, move on
         } else {
           approx.delete();
         }
-      } finally {
-        contour.delete();
       }
     }
 
-    let detected = false;
-    if (bestContour && bestArea > imgArea * 0.1) {
+    if (bestQuad) {
       const pts = [];
       for (let i = 0; i < 4; i++) {
-        pts.push({
-          x: bestContour.intAt(i, 0) / scale,
-          y: bestContour.intAt(i, 1) / scale
-        });
+        pts.push({ x: bestQuad.intAt(i, 0) / scale, y: bestQuad.intAt(i, 1) / scale });
       }
+      bestQuad.delete();
+      bestQuad = null;
 
-      // Sort: top-left, top-right, bottom-right, bottom-left
-      const sorted = orderQuadPoints(pts);
-      state.corners = sorted;
-      detected = true;
+      const pad  = 2;
+      const maxX = srcW - pad;
+      const maxY = srcH - pad;
+      state.corners = orderQuadPoints(pts).map(p => ({
+        x: Math.max(pad, Math.min(maxX, p.x)),
+        y: Math.max(pad, Math.min(maxY, p.y))
+      }));
+      return true;
     }
-    return detected;
+
+    return false;
   } catch (e) {
     console.warn("Auto-detection failed, using default corners:", e);
     return false;
   } finally {
-    if (bestContour) bestContour.delete();
-    if (hierarchy) hierarchy.delete();
-    if (contours) contours.delete();
-    if (kernel) kernel.delete();
-    if (edged) edged.delete();
-    if (blurred) blurred.delete();
-    if (gray) gray.delete();
-    if (src) src.delete();
+    if (bestQuad) { try { bestQuad.delete(); } catch (_) {} }
+    cleanup.forEach(m => { try { m.delete(); } catch (_) {} });
   }
 }
+
 
 function orderQuadPoints(pts) {
   // Sort by Y first (top vs bottom)
