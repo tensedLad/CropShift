@@ -103,21 +103,32 @@ function bindEvents() {
     if (file) loadFile(file);
   });
 
-  ["dragenter", "dragover"].forEach((type) => {
-    document.addEventListener(type, (event) => {
-      event.preventDefault();
-      els.uploadZone.classList.add("is-dragging");
-    });
+  let dragCounter = 0;
+
+  document.addEventListener("dragenter", (event) => {
+    event.preventDefault();
+    dragCounter++;
+    els.uploadZone.classList.add("is-dragging");
   });
 
-  ["dragleave", "drop"].forEach((type) => {
-    document.addEventListener(type, (event) => {
-      event.preventDefault();
+  document.addEventListener("dragover", (event) => {
+    event.preventDefault();
+  });
+
+  document.addEventListener("dragleave", (event) => {
+    event.preventDefault();
+    dragCounter--;
+    if (dragCounter <= 0) {
+      dragCounter = 0;
       els.uploadZone.classList.remove("is-dragging");
-    });
+    }
   });
 
   document.addEventListener("drop", (event) => {
+    event.preventDefault();
+    event.stopPropagation();
+    dragCounter = 0;
+    els.uploadZone.classList.remove("is-dragging");
     const [file] = event.dataTransfer.files;
     if (file) loadFile(file);
   });
