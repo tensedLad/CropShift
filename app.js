@@ -230,15 +230,31 @@ async function loadFile(file) {
     const url = URL.createObjectURL(file);
     state.image = new Image();
     state.image.decoding = "async";
-    state.image.src = url;
-    await state.image.decode();
+    
+    await new Promise((resolve, reject) => {
+      state.image.onload = resolve;
+      state.image.onerror = () => reject(new Error("Image load error"));
+      state.image.src = url;
+    });
+    
     const pixelCount = state.image.naturalWidth * state.image.naturalHeight;
+    if (pixelCount === 0) {
+      clearImage();
+      setError("Image has invalid dimensions and cannot be processed.");
+      return;
+    }
     if (pixelCount > MAX_SOURCE_PIXELS) {
       clearImage();
       setError(`Image is too large. Use an image under ${formatMegaPixels(MAX_SOURCE_PIXELS)} megapixels.`);
       return;
     }
-    state.imageBitmap = await createImageBitmap(state.image);
+    
+    try {
+      state.imageBitmap = await createImageBitmap(state.image);
+    } catch (e) {
+      state.imageBitmap = state.image;
+    }
+    
     state.fileName = file.name;
     buildSourceImageData();
     initializeCorners();
