@@ -233,8 +233,12 @@
 </main>
 
 <!-- OpenCV.js for auto document detection -->
-<script src="app.js"></script>
-<script async src="https://docs.opencv.org/4.9.0/opencv.js" onload="window.onOpenCvReady && window.onOpenCvReady()" onerror="window.onOpenCvFailed && window.onOpenCvFailed()" type="text/javascript"></script>
+    <script src="app.js"></script>
+    <script>
+        window.va = window.va || function () { (window.vaq = window.vaq || []).push(arguments); };
+    </script>
+    <script defer src="/_vercel/insights/script.js"></script>
+    <script async src="https://docs.opencv.org/4.9.0/opencv.js" onload="window.onOpenCvReady && window.onOpenCvReady()" onerror="window.onOpenCvFailed && window.onOpenCvFailed()" type="text/javascript"></script>
 
 <!-- Split-pane drag logic -->
 <script>
