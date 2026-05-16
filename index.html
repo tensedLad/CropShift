@@ -134,9 +134,9 @@
 
     <div class="px-4">
         <h3 class="text-[10px] font-bold uppercase tracking-wider text-zinc-500 mb-3 font-label-caps">Upload Area</h3>
-        <button id="uploadZone" type="button" class="w-full border-2 border-dashed border-zinc-600 rounded-lg p-5 flex flex-col items-center justify-center text-center gap-2 hover:border-[#1473e6] transition-colors group cursor-pointer bg-zinc-800/20 outline-none">
+        <button id="uploadZone" type="button" class="w-full border-2 border-dashed border-zinc-600 rounded-lg p-5 flex flex-col items-center justify-center text-center gap-2 hover:border-[#1473e6] transition-colors group cursor-pointer bg-zinc-800/20 outline-none" aria-label="Upload, drop, or paste an image">
             <span class="material-symbols-outlined text-2xl text-zinc-600 group-hover:text-blue-500 transition-colors" data-icon="cloud_upload">cloud_upload</span>
-            <p class="text-[10px] font-bold text-zinc-400 uppercase tracking-tight">Drop documents here<br/>or click to upload</p>
+            <p class="text-[10px] font-bold text-zinc-400 uppercase tracking-tight">Drop, paste, or click<br/>to upload</p>
         </button>
     </div>
 
@@ -176,7 +176,7 @@
                 <div id="emptyState" class="absolute inset-0 m-6 border border-dashed border-zinc-700 rounded-lg flex flex-col items-center justify-center gap-2 text-zinc-500 pointer-events-none bg-zinc-900/50 backdrop-blur-sm z-20">
                     <span class="material-symbols-outlined text-4xl">document_scanner</span>
                     <strong class="text-zinc-300 font-['Manrope'] text-lg">Drop an image here</strong>
-                    <span class="text-xs">Your file stays in this browser tab.</span>
+                    <span class="text-xs">Drop, paste, or click upload. Your file stays in this browser tab.</span>
                 </div>
             </div>
         </div>

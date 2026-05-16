@@ -122,6 +122,8 @@ function bindEvents() {
     if (file) loadFile(file);
   });
 
+  document.addEventListener("paste", onPasteImage);
+
   state.sourceCanvas.addEventListener("pointerdown", onPointerDown);
   state.sourceCanvas.addEventListener("pointermove", onPointerMove);
   state.sourceCanvas.addEventListener("pointerup", endPointerDrag);
@@ -174,6 +176,45 @@ function bindEvents() {
   });
 
   els.downloadButton.addEventListener("click", downloadCrop);
+}
+
+function onPasteImage(event) {
+  const file = getClipboardImageFile(event.clipboardData);
+  if (!file) return;
+
+  event.preventDefault();
+  els.uploadZone.classList.remove("is-dragging");
+  loadFile(file);
+}
+
+function getClipboardImageFile(clipboardData) {
+  if (!clipboardData) return null;
+
+  const file = Array.from(clipboardData.files).find((item) => item.type.startsWith("image/"));
+  if (file) return file.name ? file : nameClipboardBlob(file);
+
+  const item = Array.from(clipboardData.items).find((entry) => entry.kind === "file" && entry.type.startsWith("image/"));
+  if (!item) return null;
+
+  const blob = item.getAsFile();
+  return blob ? nameClipboardBlob(blob) : null;
+}
+
+function nameClipboardBlob(blob) {
+  const extension = clipboardExtension(blob.type);
+  const name = `pasted-image-${new Date().toISOString().replace(/[:.]/g, "-")}.${extension}`;
+  return new File([blob], name, { type: blob.type || "image/png", lastModified: Date.now() });
+}
+
+function clipboardExtension(type) {
+  const map = {
+    "image/jpeg": "jpg",
+    "image/png": "png",
+    "image/webp": "webp",
+    "image/gif": "gif",
+    "image/bmp": "bmp"
+  };
+  return map[type] || "png";
 }
 
 async function loadFile(file) {
