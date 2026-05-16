@@ -1073,13 +1073,9 @@ function setDownloadQualityVisibility() {
 function selectFormatButton(btn) {
   // Deselect all
   els.formatGroup.querySelectorAll(".format-btn").forEach((b) => {
-    b.classList.remove("bg-[#1473e6]", "text-white");
-    b.classList.add("bg-zinc-700", "text-zinc-400");
     b.setAttribute("aria-pressed", "false");
   });
   // Select clicked
-  btn.classList.remove("bg-zinc-700", "text-zinc-400");
-  btn.classList.add("bg-[#1473e6]", "text-white");
   btn.setAttribute("aria-pressed", "true");
   state.selectedFormat = btn.dataset.format;
   state.selectedExt = btn.dataset.ext;
@@ -1301,15 +1297,7 @@ function setCornerMode(mode) {
 
   if (els.cornerModeGroup) {
     els.cornerModeGroup.querySelectorAll(".mode-btn").forEach((b) => {
-      if (b.dataset.mode === mode) {
-        b.classList.remove("bg-zinc-700", "text-zinc-400");
-        b.classList.add("bg-[#1473e6]", "text-white");
-        b.setAttribute("aria-pressed", "true");
-      } else {
-        b.classList.remove("bg-[#1473e6]", "text-white");
-        b.classList.add("bg-zinc-700", "text-zinc-400");
-        b.setAttribute("aria-pressed", "false");
-      }
+      b.setAttribute("aria-pressed", b.dataset.mode === mode ? "true" : "false");
     });
   }
 

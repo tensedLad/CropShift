@@ -174,28 +174,91 @@ nav .h-7 {
 .top-controls {
   display: flex;
   align-items: center;
-  gap: 8px;
+  gap: 12px;
   min-width: 0;
+}
+
+#cornerModeGroup {
+  display: flex;
+  background: var(--surface-2);
+  padding: 3px;
+  border-radius: 8px;
+  border: 1px solid var(--border);
+  gap: 2px;
+}
+
+.mode-btn {
+  min-height: 26px;
+  padding: 0 12px;
+  font-size: 0.65rem;
+  font-weight: 900;
+  letter-spacing: 0.02em;
+  text-transform: none; /* Matches the screenshot '4 Corners' case */
+  color: var(--muted);
+  background: transparent;
+  border-radius: 5px;
+  cursor: pointer;
+  transition: all 120ms ease;
+}
+
+.mode-btn:hover {
+  color: #fff;
+}
+
+.mode-btn[aria-pressed="true"] {
+  background: var(--surface-3);
+  color: #fff;
+  box-shadow: 0 1px 2px var(--shadow);
+}
+
+.action-btn {
+  min-height: 26px;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 0 12px;
+  background: var(--surface-3);
+  color: #fff;
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  cursor: pointer;
+  font-size: 0.65rem;
+  font-weight: 900;
+  letter-spacing: 0.02em;
+  transition: all 120ms ease;
+}
+
+.action-btn:hover:not(:disabled) {
+  background: #4b4b52;
+  border-color: #52525b;
+}
+
+.action-btn .material-symbols-outlined {
+  font-size: 14px;
 }
 
 #resetButton,
 #fitButton,
-#clearButton {
-  min-height: 30px;
-  display: inline-flex;
-  align-items: center;
-  gap: 6px;
-  border: 1px solid #52525b;
-  border-radius: 6px;
-  background: rgba(63, 63, 70, 0.55);
-  color: #d4d4d8;
-  cursor: pointer;
-  padding: 0 10px;
-  font-size: 0.64rem;
-  font-weight: 900;
-  letter-spacing: 0.06em;
-  text-transform: uppercase;
-  transition: background-color 140ms ease, opacity 140ms ease;
+#clearButton,
+#rotateButton {
+  /* Handled by .action-btn */
+}
+
+
+.action-btn.primary {
+  background: var(--accent);
+  border-color: var(--accent);
+  padding: 0 16px;
+  min-height: 32px;
+}
+
+.action-btn.primary:hover:not(:disabled) {
+  background: var(--accent-hover);
+  border-color: var(--accent-hover);
+}
+
+.action-btn.primary .material-symbols-outlined {
+  font-size: 16px;
 }
 
 #resetButton:hover:not(:disabled),
@@ -500,26 +563,33 @@ body.is-resizing * {
 
 #formatGroup {
   display: flex;
-  overflow: hidden;
-  border: 1px solid #52525b;
-  border-radius: 6px;
+  background: var(--surface-2);
+  padding: 3px;
+  border-radius: 8px;
+  border: 1px solid var(--border);
+  gap: 2px;
 }
+
 
 .format-btn {
-  min-height: 28px;
-  background: var(--surface-2);
-  color: #a1a1aa;
+  min-height: 26px;
+  background: transparent;
+  color: var(--muted);
   cursor: pointer;
   padding: 0 10px;
-  font-size: 0.64rem;
+  font-size: 0.65rem;
   font-weight: 900;
-  letter-spacing: 0.06em;
+  letter-spacing: 0.02em;
   text-transform: uppercase;
+  border-radius: 5px;
+  transition: all 120ms ease;
 }
 
+
 .format-btn + .format-btn {
-  border-left: 1px solid #52525b;
+  border-left: none;
 }
+
 
 .format-btn:hover,
 .format-btn:focus-visible {
@@ -528,9 +598,11 @@ body.is-resizing * {
 }
 
 .format-btn[aria-pressed="true"] {
-  background: var(--accent);
+  background: var(--surface-3);
   color: #fff;
+  box-shadow: 0 1px 2px var(--shadow);
 }
+
 
 #qualityInput {
   width: 56px;

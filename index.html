@@ -95,26 +95,26 @@
         <!-- Controls -->
         <div class="top-controls flex items-center gap-2">
             <!-- Mode Toggle -->
-            <div id="cornerModeGroup" class="flex rounded overflow-hidden border border-zinc-600" role="group" aria-label="Corner Mode">
-                <button type="button" data-mode="4" aria-pressed="true" class="mode-btn px-2.5 py-1 text-[10px] font-bold uppercase tracking-wider transition-colors bg-[#1473e6] text-white">4 Corners</button>
-                <button type="button" data-mode="8" aria-pressed="false" class="mode-btn px-2.5 py-1 text-[10px] font-bold uppercase tracking-wider transition-colors bg-zinc-700 text-zinc-400 hover:text-zinc-200 border-l border-zinc-600">8 Corners</button>
+            <div id="cornerModeGroup" role="group" aria-label="Corner Mode">
+                <button type="button" data-mode="4" aria-pressed="true" class="mode-btn">4 Corners</button>
+                <button type="button" data-mode="8" aria-pressed="false" class="mode-btn">8 Corners</button>
             </div>
             
             <div class="workspace-status flex items-center gap-2">
                 <span id="engineStatus">Ready</span>
                 <p id="statusMessage" role="status" aria-live="polite">Load an image</p>
             </div>
-            <button id="rotateButton" disabled class="bg-zinc-700/50 text-zinc-300 px-3 py-1 text-[10px] font-bold uppercase tracking-wider flex items-center gap-1.5 hover:bg-zinc-600 disabled:opacity-40 disabled:cursor-not-allowed transition-colors border border-zinc-600 rounded">
-                <span class="material-symbols-outlined text-[14px]">rotate_right</span> Rotate
+            <button id="rotateButton" disabled class="action-btn">
+                <span class="material-symbols-outlined">rotate_right</span> Rotate
             </button>
-            <button id="resetButton" disabled class="bg-zinc-700/50 text-zinc-300 px-3 py-1 text-[10px] font-bold uppercase tracking-wider flex items-center gap-1.5 hover:bg-zinc-600 disabled:opacity-40 disabled:cursor-not-allowed transition-colors border border-zinc-600 rounded">
-                <span class="material-symbols-outlined text-[14px]">refresh</span> Reset
+            <button id="resetButton" disabled class="action-btn">
+                <span class="material-symbols-outlined">refresh</span> Reset
             </button>
-            <button id="fitButton" disabled class="bg-zinc-700/50 text-zinc-300 px-3 py-1 text-[10px] font-bold uppercase tracking-wider flex items-center gap-1.5 hover:bg-zinc-600 disabled:opacity-40 disabled:cursor-not-allowed transition-colors border border-zinc-600 rounded">
-                <span class="material-symbols-outlined text-[14px]">fit_screen</span> Fit
+            <button id="fitButton" disabled class="action-btn">
+                <span class="material-symbols-outlined">fit_screen</span> Fit
             </button>
-            <button id="clearButton" disabled class="bg-zinc-700/50 text-zinc-300 px-3 py-1 text-[10px] font-bold uppercase tracking-wider flex items-center gap-1.5 hover:bg-zinc-600 disabled:opacity-40 disabled:cursor-not-allowed transition-colors border border-zinc-600 rounded">
-                <span class="material-symbols-outlined text-[14px]">delete_sweep</span> Clear
+            <button id="clearButton" disabled class="action-btn">
+                <span class="material-symbols-outlined">delete</span> Clear
             </button>
         </div>
 
@@ -185,8 +185,8 @@
                 <span class="text-[10px] font-bold text-zinc-400 uppercase tracking-widest">Source</span>
             </div>
             <!-- Canvas Container -->
-            <div class="flex-1 relative flex items-center justify-center p-4 overflow-hidden" style="background-image: radial-gradient(#3a3a3a 1px, transparent 1px); background-size: 20px 20px;">
-                <canvas id="sourceCanvas" class="relative z-10 shadow-2xl rounded-sm" tabindex="0" role="application" aria-label="Crop selection editor. Use the bracket keys to choose a corner and arrow keys to move it."></canvas>
+            <div class="flex-1 relative flex items-center justify-center p-4 overflow-hidden bg-[#080808]">
+                <canvas id="sourceCanvas" class="relative z-10" tabindex="0" role="application" aria-label="Crop selection editor. Use the bracket keys to choose a corner and arrow keys to move it."></canvas>
                 <div id="emptyState" class="absolute inset-0 m-6 border border-dashed border-zinc-700 rounded-lg flex flex-col items-center justify-center gap-2 text-zinc-500 pointer-events-none bg-zinc-900/50 backdrop-blur-sm z-20">
                     <span class="material-symbols-outlined text-4xl">document_scanner</span>
                     <strong class="text-zinc-300 font-['Manrope'] text-lg">Drop an image here</strong>
@@ -205,8 +205,8 @@
                 <span id="previewInfo" class="px-2 py-0.5 bg-zinc-700 text-zinc-300 text-[9px] font-bold rounded">Output</span>
             </div>
             <!-- Preview Canvas Area (fills most of the pane) -->
-            <div class="flex-1 relative flex items-center justify-center p-4 overflow-hidden" style="background-image: radial-gradient(#3a3a3a 1px, transparent 1px); background-size: 20px 20px;">
-                <canvas id="previewCanvas" class="relative z-10 shadow-2xl rounded-sm" role="img" aria-label="Corrected crop preview"></canvas>
+            <div class="flex-1 relative flex items-center justify-center p-4 overflow-hidden bg-[#080808]">
+                <canvas id="previewCanvas" class="relative z-10" role="img" aria-label="Corrected crop preview"></canvas>
                 <div id="previewEmpty" class="absolute inset-0 m-6 flex items-center justify-center text-zinc-600 font-bold uppercase tracking-widest text-xs pointer-events-none z-20">
                     Waiting for image
                 </div>
@@ -218,11 +218,11 @@
                     <!-- Format Toggle -->
                     <div class="flex items-center gap-2">
                         <span class="text-zinc-500 text-[9px] font-black uppercase tracking-wider">Format</span>
-                        <div id="formatGroup" class="flex rounded overflow-hidden border border-zinc-600" role="group" aria-label="Export format">
-                            <button type="button" data-format="image/jpeg" data-ext="jpg" aria-pressed="true" class="format-btn px-2.5 py-1 text-[10px] font-bold uppercase tracking-wider transition-colors bg-[#1473e6] text-white">JPG</button>
-                            <button type="button" data-format="image/jpeg" data-ext="jpeg" aria-pressed="false" class="format-btn px-2.5 py-1 text-[10px] font-bold uppercase tracking-wider transition-colors bg-zinc-700 text-zinc-400 hover:text-zinc-200 border-l border-zinc-600">JPEG</button>
-                            <button type="button" data-format="image/png" data-ext="png" aria-pressed="false" class="format-btn px-2.5 py-1 text-[10px] font-bold uppercase tracking-wider transition-colors bg-zinc-700 text-zinc-400 hover:text-zinc-200 border-l border-zinc-600">PNG</button>
-                            <button type="button" data-format="image/webp" data-ext="webp" aria-pressed="false" class="format-btn px-2.5 py-1 text-[10px] font-bold uppercase tracking-wider transition-colors bg-zinc-700 text-zinc-400 hover:text-zinc-200 border-l border-zinc-600">WEBP</button>
+                        <div id="formatGroup" role="group" aria-label="Export format">
+                            <button type="button" data-format="image/jpeg" data-ext="jpg" aria-pressed="true" class="format-btn">JPG</button>
+                            <button type="button" data-format="image/jpeg" data-ext="jpeg" aria-pressed="false" class="format-btn">JPEG</button>
+                            <button type="button" data-format="image/png" data-ext="png" aria-pressed="false" class="format-btn">PNG</button>
+                            <button type="button" data-format="image/webp" data-ext="webp" aria-pressed="false" class="format-btn">WEBP</button>
                         </div>
                     </div>
                     
@@ -237,8 +237,9 @@
                 </div>
 
                 <!-- Download -->
-                <button id="downloadButton" disabled class="text-white bg-[#1473e6] px-5 py-2 rounded-lg hover:bg-blue-600 active:scale-95 disabled:opacity-40 disabled:hover:bg-[#1473e6] disabled:cursor-not-allowed transition-all flex items-center gap-2 text-[11px] font-bold uppercase tracking-wider">
-                    <span class="material-symbols-outlined text-[16px]">download</span> Download
+                <!-- Download -->
+                <button id="downloadButton" disabled class="action-btn primary">
+                    <span class="material-symbols-outlined">download</span> Download
                 </button>
             </div>
         </div>
