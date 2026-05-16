@@ -94,10 +94,19 @@
         
         <!-- Controls -->
         <div class="top-controls flex items-center gap-2">
+            <!-- Mode Toggle -->
+            <div id="cornerModeGroup" class="flex rounded overflow-hidden border border-zinc-600" role="group" aria-label="Corner Mode">
+                <button type="button" data-mode="4" aria-pressed="true" class="mode-btn px-2.5 py-1 text-[10px] font-bold uppercase tracking-wider transition-colors bg-[#1473e6] text-white">4 Corners</button>
+                <button type="button" data-mode="8" aria-pressed="false" class="mode-btn px-2.5 py-1 text-[10px] font-bold uppercase tracking-wider transition-colors bg-zinc-700 text-zinc-400 hover:text-zinc-200 border-l border-zinc-600">8 Corners</button>
+            </div>
+            
             <div class="workspace-status flex items-center gap-2">
                 <span id="engineStatus">Ready</span>
                 <p id="statusMessage" role="status" aria-live="polite">Load an image</p>
             </div>
+            <button id="rotateButton" disabled class="bg-zinc-700/50 text-zinc-300 px-3 py-1 text-[10px] font-bold uppercase tracking-wider flex items-center gap-1.5 hover:bg-zinc-600 disabled:opacity-40 disabled:cursor-not-allowed transition-colors border border-zinc-600 rounded">
+                <span class="material-symbols-outlined text-[14px]">rotate_right</span> Rotate
+            </button>
             <button id="resetButton" disabled class="bg-zinc-700/50 text-zinc-300 px-3 py-1 text-[10px] font-bold uppercase tracking-wider flex items-center gap-1.5 hover:bg-zinc-600 disabled:opacity-40 disabled:cursor-not-allowed transition-colors border border-zinc-600 rounded">
                 <span class="material-symbols-outlined text-[14px]">refresh</span> Reset
             </button>

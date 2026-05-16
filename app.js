@@ -16,7 +16,9 @@ const state = {
   previewQueued: false,
   isRenderingFinal: false,
   cvReady: false,
-  pendingAutoDetect: false
+  pendingAutoDetect: false,
+  cornerMode: localStorage.getItem("cropshift_corner_mode") || "4",
+  rotation: 0
 };
 
 function onOpenCvReady() {
@@ -77,6 +79,8 @@ function bindElements() {
     "selectionSize",
     "engineStatus",
     "statusMessage",
+    "rotateButton",
+    "cornerModeGroup",
     "resetButton",
     "fitButton",
     "clearButton",
@@ -94,9 +98,31 @@ function bindElements() {
   // Store selected format state
   state.selectedFormat = "image/jpeg";
   state.selectedExt = "jpg";
+
+  if (els.cornerModeGroup) {
+    els.cornerModeGroup.querySelectorAll(".mode-btn").forEach((b) => {
+      if (b.dataset.mode === state.cornerMode) {
+        b.classList.remove("bg-zinc-700", "text-zinc-400");
+        b.classList.add("bg-[#1473e6]", "text-white");
+        b.setAttribute("aria-pressed", "true");
+      } else {
+        b.classList.remove("bg-[#1473e6]", "text-white");
+        b.classList.add("bg-zinc-700", "text-zinc-400");
+        b.setAttribute("aria-pressed", "false");
+      }
+    });
+  }
 }
 
 function bindEvents() {
+  if (els.cornerModeGroup) {
+    els.cornerModeGroup.querySelectorAll(".mode-btn").forEach((btn) => {
+      btn.addEventListener("click", () => setCornerMode(btn.dataset.mode));
+    });
+  }
+  if (els.rotateButton) {
+    els.rotateButton.addEventListener("click", rotateImageRight);
+  }
   els.uploadZone.addEventListener("click", () => els.fileInput.click());
   els.fileInput.addEventListener("change", (event) => {
     const [file] = event.target.files;
@@ -260,14 +286,9 @@ async function loadFile(file) {
       return;
     }
     
-    try {
-      state.imageBitmap = await createImageBitmap(state.image);
-    } catch (e) {
-      state.imageBitmap = state.image;
-    }
-    
     state.fileName = file.name;
-    buildSourceImageData();
+    state.rotation = 0;
+    await buildSourceImageData();
     initializeCorners();
     const detected = autoDetectCorners();
     resizeCanvases();
@@ -292,27 +313,54 @@ async function loadFile(file) {
   }
 }
 
-function buildSourceImageData() {
-  const width = state.image.naturalWidth;
-  const height = state.image.naturalHeight;
+async function buildSourceImageData() {
+  const isRotated = state.rotation === 90 || state.rotation === 270;
+  const width = isRotated ? state.image.naturalHeight : state.image.naturalWidth;
+  const height = isRotated ? state.image.naturalWidth : state.image.naturalHeight;
+  
   const canvas = document.createElement("canvas");
   canvas.width = width;
   canvas.height = height;
   const ctx = canvas.getContext("2d", { willReadFrequently: true });
-  ctx.drawImage(state.image, 0, 0);
+  
+  ctx.save();
+  ctx.translate(width / 2, height / 2);
+  ctx.rotate((state.rotation * Math.PI) / 180);
+  ctx.drawImage(state.image, -state.image.naturalWidth / 2, -state.image.naturalHeight / 2);
+  ctx.restore();
+  
   state.sourceData = ctx.getImageData(0, 0, width, height);
+
+  try {
+    state.imageBitmap = await createImageBitmap(canvas);
+  } catch (e) {
+    state.imageBitmap = canvas;
+  }
 }
 
 function initializeCorners() {
-  const width = state.image.naturalWidth;
-  const height = state.image.naturalHeight;
+  const width = state.imageBitmap.width;
+  const height = state.imageBitmap.height;
   const inset = Math.max(8, Math.round(Math.min(width, height) * 0.04));
-  state.defaultCorners = [
-    { x: inset, y: inset },
-    { x: width - inset, y: inset },
-    { x: width - inset, y: height - inset },
-    { x: inset, y: height - inset }
-  ];
+  if (state.cornerMode === "8") {
+    state.defaultCorners = [
+      { x: inset, y: inset },
+      { x: width / 2, y: inset },
+      { x: width - inset, y: inset },
+      { x: width - inset, y: height / 2 },
+      { x: width - inset, y: height - inset },
+      { x: width / 2, y: height - inset },
+      { x: inset, y: height - inset },
+      { x: inset, y: height / 2 }
+    ];
+  } else {
+    state.defaultCorners = [
+      { x: inset, y: inset },
+      { x: width - inset, y: inset },
+      { x: width - inset, y: height - inset },
+      { x: inset, y: height - inset }
+    ];
+  }
   state.corners = cloneCorners(state.defaultCorners);
 }
 
@@ -348,7 +396,7 @@ function drawSource(hoverCorner = -1) {
     return;
   }
 
-  const fit = getImageFit(canvas.width, canvas.height, state.image.naturalWidth, state.image.naturalHeight);
+  const fit = getImageFit(canvas.width, canvas.height, state.imageBitmap.width, state.imageBitmap.height);
   state.view = fit;
   ctx.imageSmoothingEnabled = true;
   ctx.imageSmoothingQuality = "high";
@@ -437,7 +485,9 @@ function drawCropOverlay(ctx, hoverCorner) {
 
   points.forEach((point, index) => {
     const active = index === state.activeCorner || index === hoverCorner;
-    const radius = (active ? HANDLE_RADIUS + 3 : HANDLE_RADIUS) * pixelRatio();
+    const isMidpoint = state.corners.length === 8 && index % 2 !== 0;
+    const baseRadius = isMidpoint ? HANDLE_RADIUS - 3 : HANDLE_RADIUS;
+    const radius = (active ? baseRadius + 3 : baseRadius) * pixelRatio();
     ctx.beginPath();
     ctx.arc(point.x, point.y, radius, 0, Math.PI * 2);
     ctx.fillStyle = active ? "#60a5fa" : "#3b82f6";
@@ -474,8 +524,8 @@ function onPointerMove(event) {
   }
 
   const imagePoint = canvasToImage(point);
-  const maxX = state.image.naturalWidth - 1;
-  const maxY = state.image.naturalHeight - 1;
+  const maxX = state.imageBitmap.width - 1;
+  const maxY = state.imageBitmap.height - 1;
   state.corners[state.activeCorner] = {
     x: clamp(imagePoint.x, 0, maxX),
     y: clamp(imagePoint.y, 0, maxY)
@@ -526,8 +576,8 @@ function onCanvasKeyDown(event) {
   const step = event.shiftKey ? 10 : 1;
   const corner = state.corners[state.keyboardCorner];
   state.corners[state.keyboardCorner] = {
-    x: clamp(corner.x + movement.x * step, 0, state.image.naturalWidth - 1),
-    y: clamp(corner.y + movement.y * step, 0, state.image.naturalHeight - 1)
+    x: clamp(corner.x + movement.x * step, 0, state.imageBitmap.width - 1),
+    y: clamp(corner.y + movement.y * step, 0, state.imageBitmap.height - 1)
   };
   state.activeCorner = state.keyboardCorner;
   afterCornerChange();
@@ -634,30 +684,96 @@ async function downloadCrop() {
 
 function warpPerspective(width, height, outputScale) {
   const src = state.sourceData;
-  const scaledDest = [
-    { x: 0, y: 0 },
-    { x: width - 1, y: 0 },
-    { x: width - 1, y: height - 1 },
-    { x: 0, y: height - 1 }
-  ];
   const sourceCorners = state.corners.map((point) => ({
     x: point.x * outputScale,
     y: point.y * outputScale
   }));
-  const homography = solveHomography(scaledDest, sourceCorners);
   const output = new ImageData(width, height);
   const out = output.data;
   const srcData = src.data;
   const srcWidth = src.width;
   const srcHeight = src.height;
 
-  for (let y = 0; y < height; y += 1) {
-    for (let x = 0; x < width; x += 1) {
-      const source = applyHomography(homography, x, y);
-      const sx = source.x / outputScale;
-      const sy = source.y / outputScale;
-      const targetIndex = (y * width + x) * 4;
-      sampleBilinear(srcData, srcWidth, srcHeight, sx, sy, out, targetIndex);
+  if (state.cornerMode === "8" && sourceCorners.length === 8) {
+    const p = sourceCorners;
+    const GRID_SIZE = 20;
+    const gridX = new Float32Array((GRID_SIZE + 1) * (GRID_SIZE + 1));
+    const gridY = new Float32Array((GRID_SIZE + 1) * (GRID_SIZE + 1));
+
+    for (let j = 0; j <= GRID_SIZE; j++) {
+      const s = (j / GRID_SIZE) * 2 - 1;
+      for (let i = 0; i <= GRID_SIZE; i++) {
+        const r = (i / GRID_SIZE) * 2 - 1;
+        
+        const n1 = 0.25 * (1 - r) * (1 - s) * (-r - s - 1);
+        const n2 = 0.25 * (1 + r) * (1 - s) * ( r - s - 1);
+        const n3 = 0.25 * (1 + r) * (1 + s) * ( r + s - 1);
+        const n4 = 0.25 * (1 - r) * (1 + s) * (-r + s - 1);
+        const n5 = 0.5 * (1 - r * r) * (1 - s);
+        const n6 = 0.5 * (1 + r) * (1 - s * s);
+        const n7 = 0.5 * (1 - r * r) * (1 + s);
+        const n8 = 0.5 * (1 - r) * (1 - s * s);
+
+        const gx = n1*p[0].x + n5*p[1].x + n2*p[2].x + n6*p[3].x + n3*p[4].x + n7*p[5].x + n4*p[6].x + n8*p[7].x;
+        const gy = n1*p[0].y + n5*p[1].y + n2*p[2].y + n6*p[3].y + n3*p[4].y + n7*p[5].y + n4*p[6].y + n8*p[7].y;
+        
+        const idx = j * (GRID_SIZE + 1) + i;
+        gridX[idx] = gx;
+        gridY[idx] = gy;
+      }
+    }
+
+    const hMinus1 = Math.max(1, height - 1);
+    const wMinus1 = Math.max(1, width - 1);
+
+    for (let y = 0; y < height; y += 1) {
+      const vj = (y / hMinus1) * GRID_SIZE;
+      let j = Math.floor(vj);
+      if (j >= GRID_SIZE) j = GRID_SIZE - 1;
+      const dyPatch = vj - j;
+
+      for (let x = 0; x < width; x += 1) {
+        const vi = (x / wMinus1) * GRID_SIZE;
+        let i = Math.floor(vi);
+        if (i >= GRID_SIZE) i = GRID_SIZE - 1;
+        const dxPatch = vi - i;
+
+        const idx00 = j * (GRID_SIZE + 1) + i;
+        const idx10 = idx00 + 1;
+        const idx01 = (j + 1) * (GRID_SIZE + 1) + i;
+        const idx11 = idx01 + 1;
+
+        const gx0 = gridX[idx00] * (1 - dxPatch) + gridX[idx10] * dxPatch;
+        const gx1 = gridX[idx01] * (1 - dxPatch) + gridX[idx11] * dxPatch;
+        const sx = gx0 * (1 - dyPatch) + gx1 * dyPatch;
+
+        const gy0 = gridY[idx00] * (1 - dxPatch) + gridY[idx10] * dxPatch;
+        const gy1 = gridY[idx01] * (1 - dxPatch) + gridY[idx11] * dxPatch;
+        const sy = gy0 * (1 - dyPatch) + gy1 * dyPatch;
+
+        const targetIndex = (y * width + x) * 4;
+        sampleBilinear(srcData, srcWidth, srcHeight, sx / outputScale, sy / outputScale, out, targetIndex);
+      }
+    }
+
+  } else {
+    const mainCorners = sourceCorners.length === 8 ? [sourceCorners[0], sourceCorners[2], sourceCorners[4], sourceCorners[6]] : sourceCorners;
+    const scaledDest = [
+      { x: 0, y: 0 },
+      { x: width - 1, y: 0 },
+      { x: width - 1, y: height - 1 },
+      { x: 0, y: height - 1 }
+    ];
+    const homography = solveHomography(scaledDest, mainCorners);
+
+    for (let y = 0; y < height; y += 1) {
+      for (let x = 0; x < width; x += 1) {
+        const source = applyHomography(homography, x, y);
+        const sx = source.x / outputScale;
+        const sy = source.y / outputScale;
+        const targetIndex = (y * width + x) * 4;
+        sampleBilinear(srcData, srcWidth, srcHeight, sx, sy, out, targetIndex);
+      }
     }
   }
 
@@ -745,10 +861,11 @@ function sampleBilinear(src, width, height, x, y, out, outIndex) {
 
 function getOutputDimensions(corners) {
   if (!isValidCornerSet(corners)) return null;
-  const top = distance(corners[0], corners[1]);
-  const right = distance(corners[1], corners[2]);
-  const bottom = distance(corners[2], corners[3]);
-  const left = distance(corners[3], corners[0]);
+  const mainCorners = corners.length === 8 ? [corners[0], corners[2], corners[4], corners[6]] : corners;
+  const top = distance(mainCorners[0], mainCorners[1]);
+  const right = distance(mainCorners[1], mainCorners[2]);
+  const bottom = distance(mainCorners[2], mainCorners[3]);
+  const left = distance(mainCorners[3], mainCorners[0]);
   const width = Math.max(1, Math.round((top + bottom) / 2));
   const height = Math.max(1, Math.round((left + right) / 2));
   return { width, height };
@@ -811,28 +928,42 @@ function canvasToImage(point) {
 }
 
 function imageBoundsCorners() {
-  const width = state.image.naturalWidth - 1;
-  const height = state.image.naturalHeight - 1;
-  return [
-    { x: 0, y: 0 },
-    { x: width, y: 0 },
-    { x: width, y: height },
-    { x: 0, y: height }
-  ];
+  const w = state.imageBitmap.width - 1;
+  const h = state.imageBitmap.height - 1;
+  if (state.cornerMode === "8") {
+    return [
+      { x: 0, y: 0 },
+      { x: w/2, y: 0 },
+      { x: w, y: 0 },
+      { x: w, y: h/2 },
+      { x: w, y: h },
+      { x: w/2, y: h },
+      { x: 0, y: h },
+      { x: 0, y: h/2 }
+    ];
+  } else {
+    return [
+      { x: 0, y: 0 },
+      { x: w, y: 0 },
+      { x: w, y: h },
+      { x: 0, y: h }
+    ];
+  }
 }
 
 function isValidCornerSet(corners) {
-  if (!corners || corners.length !== 4) return false;
+  if (!corners || (corners.length !== 4 && corners.length !== 8)) return false;
   if (!corners.every((point) => Number.isFinite(point.x) && Number.isFinite(point.y))) return false;
-  const minimumEdge = corners.every((point, index) => {
-    const next = corners[(index + 1) % corners.length];
+  const mainCorners = corners.length === 8 ? [corners[0], corners[2], corners[4], corners[6]] : corners;
+  const minimumEdge = mainCorners.every((point, index) => {
+    const next = mainCorners[(index + 1) % mainCorners.length];
     return distance(point, next) > 8;
   });
   if (!minimumEdge) return false;
-  if (segmentsIntersect(corners[0], corners[1], corners[2], corners[3])) return false;
-  if (segmentsIntersect(corners[1], corners[2], corners[3], corners[0])) return false;
-  if (!isConvexQuadrilateral(corners)) return false;
-  const area = Math.abs(polygonArea(corners));
+  if (segmentsIntersect(mainCorners[0], mainCorners[1], mainCorners[2], mainCorners[3])) return false;
+  if (segmentsIntersect(mainCorners[1], mainCorners[2], mainCorners[3], mainCorners[0])) return false;
+  if (!isConvexQuadrilateral(mainCorners)) return false;
+  const area = Math.abs(polygonArea(mainCorners));
   return area > 64;
 }
 
@@ -926,6 +1057,7 @@ function updateSelectionMeta() {
 
 function setControlsEnabled(enabled) {
   els.resetButton.disabled = !enabled;
+  if (els.rotateButton) els.rotateButton.disabled = !enabled;
   els.fitButton.disabled = !enabled;
   els.clearButton.disabled = !enabled;
   els.downloadButton.disabled = !enabled || !isValidCornerSet(state.corners);
@@ -1027,15 +1159,15 @@ function autoDetectCorners() {
 
   try {
     const maxDim = 1000;
-    let srcW = state.image.naturalWidth;
-    let srcH = state.image.naturalHeight;
+    let srcW = state.imageBitmap.width;
+    let srcH = state.imageBitmap.height;
     const scale = Math.min(1, maxDim / Math.max(srcW, srcH));
     const w = Math.round(srcW * scale);
     const h = Math.round(srcH * scale);
 
     const tmp = document.createElement("canvas");
     tmp.width = w; tmp.height = h;
-    tmp.getContext("2d").drawImage(state.image, 0, 0, w, h);
+    tmp.getContext("2d").drawImage(state.imageBitmap, 0, 0, w, h);
 
     const src   = track(cv.imread(tmp));
     const gray  = track(new cv.Mat());
@@ -1118,10 +1250,23 @@ function autoDetectCorners() {
       const pad  = 2;
       const maxX = srcW - pad;
       const maxY = srcH - pad;
-      state.corners = orderQuadPoints(pts).map(p => ({
+      let c = orderQuadPoints(pts).map(p => ({
         x: Math.max(pad, Math.min(maxX, p.x)),
         y: Math.max(pad, Math.min(maxY, p.y))
       }));
+      if (state.cornerMode === "8") {
+        c = [
+          c[0],
+          { x: (c[0].x + c[1].x) / 2, y: (c[0].y + c[1].y) / 2 },
+          c[1],
+          { x: (c[1].x + c[2].x) / 2, y: (c[1].y + c[2].y) / 2 },
+          c[2],
+          { x: (c[2].x + c[3].x) / 2, y: (c[2].y + c[3].y) / 2 },
+          c[3],
+          { x: (c[3].x + c[0].x) / 2, y: (c[3].y + c[0].y) / 2 }
+        ];
+      }
+      state.corners = c;
       return true;
     }
 
@@ -1147,4 +1292,78 @@ function orderQuadPoints(pts) {
     { x: bottom[1].x, y: bottom[1].y }, // bottom-right
     { x: bottom[0].x, y: bottom[0].y }  // bottom-left
   ];
+}
+
+function setCornerMode(mode) {
+  if (state.cornerMode === mode) return;
+  state.cornerMode = mode;
+  localStorage.setItem("cropshift_corner_mode", mode);
+
+  if (els.cornerModeGroup) {
+    els.cornerModeGroup.querySelectorAll(".mode-btn").forEach((b) => {
+      if (b.dataset.mode === mode) {
+        b.classList.remove("bg-zinc-700", "text-zinc-400");
+        b.classList.add("bg-[#1473e6]", "text-white");
+        b.setAttribute("aria-pressed", "true");
+      } else {
+        b.classList.remove("bg-[#1473e6]", "text-white");
+        b.classList.add("bg-zinc-700", "text-zinc-400");
+        b.setAttribute("aria-pressed", "false");
+      }
+    });
+  }
+
+  if (state.corners && state.corners.length > 0) {
+    if (mode === "8" && state.corners.length === 4) {
+      const c = state.corners;
+      state.corners = [
+        c[0],
+        { x: (c[0].x + c[1].x) / 2, y: (c[0].y + c[1].y) / 2 },
+        c[1],
+        { x: (c[1].x + c[2].x) / 2, y: (c[1].y + c[2].y) / 2 },
+        c[2],
+        { x: (c[2].x + c[3].x) / 2, y: (c[2].y + c[3].y) / 2 },
+        c[3],
+        { x: (c[3].x + c[0].x) / 2, y: (c[3].y + c[0].y) / 2 }
+      ];
+    } else if (mode === "4" && state.corners.length === 8) {
+      const c = state.corners;
+      state.corners = [c[0], c[2], c[4], c[6]];
+    }
+    if (state.keyboardCorner >= state.corners.length) state.keyboardCorner = 0;
+    state.activeCorner = -1;
+    afterCornerChange();
+  }
+}
+
+async function rotateImageRight() {
+  if (!state.image) return;
+  state.rotation = (state.rotation + 90) % 360;
+  
+  const w = state.imageBitmap.width;
+  const h = state.imageBitmap.height;
+  const cx = w / 2;
+  const cy = h / 2;
+
+  state.corners = state.corners.map(p => {
+    const x = p.x - cx;
+    const y = p.y - cy;
+    return {
+      x: -y + cy,
+      y: x + cx
+    };
+  });
+
+  state.defaultCorners = state.defaultCorners.map(p => {
+    const x = p.x - cx;
+    const y = p.y - cy;
+    return { x: -y + cy, y: x + cx };
+  });
+
+  setBusy("Rotating image...");
+  await buildSourceImageData();
+  resizeCanvases();
+  updateMeta();
+  setStatus("Image rotated.");
+  afterCornerChange();
 }
