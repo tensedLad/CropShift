@@ -1,0 +1,11 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 96 96" role="img" aria-labelledby="title desc">
+  <title id="title">CropShift logo</title>
+  <desc id="desc">A blue perspective crop frame with four square handles.</desc>
+  <g fill="none" stroke="#1473e6" stroke-linejoin="miter">
+    <path d="M27 24h50M19 72h50M30 28 19 68M77 28 66 68" stroke-width="8" stroke-linecap="square"/>
+    <rect x="18" y="14" width="18" height="18" stroke-width="6"/>
+    <rect x="66" y="14" width="18" height="18" stroke-width="6"/>
+    <rect x="10" y="64" width="18" height="18" stroke-width="6"/>
+    <rect x="58" y="64" width="18" height="18" stroke-width="6"/>
+  </g>
+</svg>

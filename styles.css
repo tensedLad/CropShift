@@ -95,20 +95,31 @@ nav > div {
 }
 
 .brand-logo {
-  width: 164px;
-  height: 44px;
+  min-width: 0;
+  min-height: 44px;
   display: flex;
   align-items: center;
+  gap: 10px;
   overflow: hidden;
   border-radius: 4px;
+  color: #fff;
+  text-decoration: none;
 }
 
 .brand-logo img {
-  width: 100%;
-  height: 100%;
+  width: 28px;
+  height: 28px;
+  flex: 0 0 auto;
   display: block;
-  object-fit: contain;
-  object-position: left center;
+}
+
+.brand-logo span {
+  color: #fff;
+  font-family: var(--display-font);
+  font-size: 1rem;
+  font-weight: 900;
+  letter-spacing: 0.02em;
+  white-space: nowrap;
 }
 
 nav > div:first-child > span:last-child {
