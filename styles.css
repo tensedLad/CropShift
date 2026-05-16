@@ -94,13 +94,21 @@ nav > div {
   min-width: 0;
 }
 
-nav > div:first-child > span:first-child {
-  color: #fff;
-  font-size: 1.05rem;
-  font-weight: 900;
-  letter-spacing: 0.12em;
-  text-transform: uppercase;
-  white-space: nowrap;
+.brand-logo {
+  width: 164px;
+  height: 44px;
+  display: flex;
+  align-items: center;
+  overflow: hidden;
+  border-radius: 4px;
+}
+
+.brand-logo img {
+  width: 100%;
+  height: 100%;
+  display: block;
+  object-fit: contain;
+  object-position: left center;
 }
 
 nav > div:first-child > span:last-child {
