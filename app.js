@@ -11,22 +11,44 @@ const state = {
   defaultCorners: [],
   view: { scale: 1, offsetX: 0, offsetY: 0, width: 0, height: 0 },
   activeCorner: -1,
+  keyboardCorner: 0,
   pointerId: null,
   previewQueued: false,
   isRenderingFinal: false,
-  cvReady: false
+  cvReady: false,
+  pendingAutoDetect: false
 };
 
 function onOpenCvReady() {
   state.cvReady = true;
-  console.log("OpenCV.js loaded and ready.");
+  if (state.pendingAutoDetect && state.image && state.sourceData) {
+    const detected = autoDetectCorners();
+    state.pendingAutoDetect = false;
+    if (detected) {
+      updateMeta();
+      afterCornerChange();
+      setStatus("Document edges auto-detected. Drag a corner handle to refine.");
+    }
+  }
 }
+
+function onOpenCvFailed() {
+  state.cvReady = false;
+  state.pendingAutoDetect = false;
+  if (state.image) {
+    setStatus("Auto-detection is unavailable. Drag a corner handle to shape the crop.");
+  }
+}
+
+window.onOpenCvReady = onOpenCvReady;
+window.onOpenCvFailed = onOpenCvFailed;
 
 const els = {};
 const HANDLE_RADIUS = 10;
 const HANDLE_HIT_RADIUS = 22;
 const PREVIEW_MAX_SIDE = 680;
 const PREVIEW_MAX_PIXELS = 520000;
+const MAX_SOURCE_PIXELS = 24000000;
 
 document.addEventListener("DOMContentLoaded", () => {
   bindElements();
@@ -104,17 +126,32 @@ function bindEvents() {
   state.sourceCanvas.addEventListener("pointermove", onPointerMove);
   state.sourceCanvas.addEventListener("pointerup", endPointerDrag);
   state.sourceCanvas.addEventListener("pointercancel", endPointerDrag);
+  state.sourceCanvas.addEventListener("keydown", onCanvasKeyDown);
+  state.sourceCanvas.addEventListener("focus", () => {
+    if (!state.imageBitmap || !isValidCornerSet(state.corners)) return;
+    state.activeCorner = state.keyboardCorner;
+    drawSource(state.keyboardCorner);
+  });
+  state.sourceCanvas.addEventListener("blur", () => {
+    if (state.pointerId !== null) return;
+    state.activeCorner = -1;
+    drawSource();
+  });
   state.sourceCanvas.addEventListener("pointerleave", () => {
     if (state.activeCorner === -1) drawSource();
   });
 
   els.resetButton.addEventListener("click", () => {
+    state.pendingAutoDetect = false;
+    state.keyboardCorner = 0;
     state.corners = cloneCorners(state.defaultCorners);
     setStatus("Corners reset to the document-safe inset.");
     afterCornerChange();
   });
 
   els.fitButton.addEventListener("click", () => {
+    state.pendingAutoDetect = false;
+    state.keyboardCorner = 0;
     state.corners = imageBoundsCorners();
     setStatus("Selection fitted to the full image.");
     afterCornerChange();
@@ -154,18 +191,31 @@ async function loadFile(file) {
     state.image.decoding = "async";
     state.image.src = url;
     await state.image.decode();
+    const pixelCount = state.image.naturalWidth * state.image.naturalHeight;
+    if (pixelCount > MAX_SOURCE_PIXELS) {
+      clearImage();
+      setError(`Image is too large. Use an image under ${formatMegaPixels(MAX_SOURCE_PIXELS)} megapixels.`);
+      return;
+    }
     state.imageBitmap = await createImageBitmap(state.image);
     state.fileName = file.name;
     buildSourceImageData();
     initializeCorners();
-    autoDetectCorners();
+    const detected = autoDetectCorners();
     resizeCanvases();
     updateMeta();
     setControlsEnabled(true);
     els.emptyState.classList.add("is-hidden");
     els.previewEmpty.classList.add("is-hidden");
     autoSelectFormat(file.name);
-    setStatus("Drag a corner handle to shape the crop.");
+    if (detected) {
+      setStatus("Document edges auto-detected. Drag a corner handle to refine.");
+    } else if (!state.cvReady) {
+      state.pendingAutoDetect = true;
+      setStatus("Auto-detection is loading. Drag a corner handle to shape the crop.");
+    } else {
+      setStatus("Drag a corner handle to shape the crop.");
+    }
     afterCornerChange();
   } catch (error) {
     console.error(error);
@@ -337,8 +387,11 @@ function onPointerDown(event) {
   const cornerIndex = findCornerAtPoint(point);
   if (cornerIndex === -1) return;
 
+  state.pendingAutoDetect = false;
+  state.keyboardCorner = cornerIndex;
   state.activeCorner = cornerIndex;
   state.pointerId = event.pointerId;
+  state.sourceCanvas.focus({ preventScroll: true });
   state.sourceCanvas.setPointerCapture(event.pointerId);
   drawSource(cornerIndex);
 }
@@ -359,6 +412,7 @@ function onPointerMove(event) {
     x: clamp(imagePoint.x, 0, maxX),
     y: clamp(imagePoint.y, 0, maxY)
   };
+  state.keyboardCorner = state.activeCorner;
   afterCornerChange();
 }
 
@@ -369,6 +423,46 @@ function endPointerDrag(event) {
   state.activeCorner = -1;
   state.pointerId = null;
   drawSource();
+}
+
+function onCanvasKeyDown(event) {
+  if (!state.imageBitmap || !isValidCornerSet(state.corners)) return;
+
+  const key = event.key;
+  if (key === "[" || key === "]") {
+    event.preventDefault();
+    const direction = key === "]" ? 1 : -1;
+    state.keyboardCorner = (state.keyboardCorner + direction + state.corners.length) % state.corners.length;
+    state.activeCorner = state.keyboardCorner;
+    drawSource(state.keyboardCorner);
+    return;
+  }
+
+  const movement = {
+    ArrowUp: { x: 0, y: -1 },
+    ArrowDown: { x: 0, y: 1 },
+    ArrowLeft: { x: -1, y: 0 },
+    ArrowRight: { x: 1, y: 0 }
+  }[key];
+
+  if (!movement) {
+    if (key === "Escape") {
+      state.activeCorner = -1;
+      drawSource();
+    }
+    return;
+  }
+
+  event.preventDefault();
+  state.pendingAutoDetect = false;
+  const step = event.shiftKey ? 10 : 1;
+  const corner = state.corners[state.keyboardCorner];
+  state.corners[state.keyboardCorner] = {
+    x: clamp(corner.x + movement.x * step, 0, state.image.naturalWidth - 1),
+    y: clamp(corner.y + movement.y * step, 0, state.image.naturalHeight - 1)
+  };
+  state.activeCorner = state.keyboardCorner;
+  afterCornerChange();
 }
 
 function afterCornerChange() {
@@ -405,7 +499,6 @@ function renderPreview() {
     const data = warpPerspective(width, height, scale);
     paintPreview(data, width, height);
     els.previewInfo.textContent = `${Math.round(dims.width)} x ${Math.round(dims.height)} px export`;
-    setStatus("Preview updated.");
   } catch (error) {
     console.error(error);
     clearPreview("Preview failed");
@@ -731,6 +824,8 @@ function clearImage() {
   state.corners = [];
   state.defaultCorners = [];
   state.activeCorner = -1;
+  state.keyboardCorner = 0;
+  state.pendingAutoDetect = false;
   els.fileInput.value = "";
   updateMeta();
   setControlsEnabled(false);
@@ -780,10 +875,12 @@ function selectFormatButton(btn) {
   els.formatGroup.querySelectorAll(".format-btn").forEach((b) => {
     b.classList.remove("bg-[#1473e6]", "text-white");
     b.classList.add("bg-zinc-700", "text-zinc-400");
+    b.setAttribute("aria-pressed", "false");
   });
   // Select clicked
   btn.classList.remove("bg-zinc-700", "text-zinc-400");
   btn.classList.add("bg-[#1473e6]", "text-white");
+  btn.setAttribute("aria-pressed", "true");
   state.selectedFormat = btn.dataset.format;
   state.selectedExt = btn.dataset.ext;
   setDownloadQualityVisibility();
@@ -847,9 +944,22 @@ function pixelRatio() {
   return window.devicePixelRatio || 1;
 }
 
+function formatMegaPixels(pixelCount) {
+  return Math.round(pixelCount / 1000000);
+}
+
 // ---- OpenCV Auto-Detection ----
 function autoDetectCorners() {
-  if (!state.cvReady || !state.image) return;
+  if (!state.cvReady || !state.image) return false;
+
+  let src = null;
+  let gray = null;
+  let blurred = null;
+  let edged = null;
+  let kernel = null;
+  let contours = null;
+  let hierarchy = null;
+  let bestContour = null;
 
   try {
     const tempCanvas = document.createElement("canvas");
@@ -864,45 +974,48 @@ function autoDetectCorners() {
     const tctx = tempCanvas.getContext("2d");
     tctx.drawImage(state.image, 0, 0, w, h);
 
-    const src = cv.imread(tempCanvas);
-    const gray = new cv.Mat();
-    const blurred = new cv.Mat();
-    const edged = new cv.Mat();
+    src = cv.imread(tempCanvas);
+    gray = new cv.Mat();
+    blurred = new cv.Mat();
+    edged = new cv.Mat();
 
     cv.cvtColor(src, gray, cv.COLOR_RGBA2GRAY);
     cv.GaussianBlur(gray, blurred, new cv.Size(5, 5), 0);
     cv.Canny(blurred, edged, 50, 150);
 
-    // Dilate to close gaps
-    const kernel = cv.Mat.ones(3, 3, cv.CV_8U);
+    kernel = cv.Mat.ones(3, 3, cv.CV_8U);
     cv.dilate(edged, edged, kernel);
-    kernel.delete();
 
-    const contours = new cv.MatVector();
-    const hierarchy = new cv.Mat();
+    contours = new cv.MatVector();
+    hierarchy = new cv.Mat();
     cv.findContours(edged, contours, hierarchy, cv.RETR_EXTERNAL, cv.CHAIN_APPROX_SIMPLE);
 
-    let bestContour = null;
     let bestArea = 0;
     const imgArea = w * h;
 
     for (let i = 0; i < contours.size(); i++) {
       const contour = contours.get(i);
-      const area = cv.contourArea(contour);
-      if (area < imgArea * 0.05) continue;
+      try {
+        const area = cv.contourArea(contour);
+        if (area < imgArea * 0.05) continue;
 
-      const peri = cv.arcLength(contour, true);
-      const approx = new cv.Mat();
-      cv.approxPolyDP(contour, approx, 0.02 * peri, true);
+        const peri = cv.arcLength(contour, true);
+        const approx = new cv.Mat();
+        cv.approxPolyDP(contour, approx, 0.02 * peri, true);
 
-      if (approx.rows === 4 && area > bestArea) {
-        bestArea = area;
-        bestContour = approx;
-      } else {
-        approx.delete();
+        if (approx.rows === 4 && area > bestArea) {
+          if (bestContour) bestContour.delete();
+          bestArea = area;
+          bestContour = approx;
+        } else {
+          approx.delete();
+        }
+      } finally {
+        contour.delete();
       }
     }
 
+    let detected = false;
     if (bestContour && bestArea > imgArea * 0.1) {
       const pts = [];
       for (let i = 0; i < 4; i++) {
@@ -911,23 +1024,25 @@ function autoDetectCorners() {
           y: bestContour.intAt(i, 1) / scale
         });
       }
-      bestContour.delete();
 
       // Sort: top-left, top-right, bottom-right, bottom-left
       const sorted = orderQuadPoints(pts);
       state.corners = sorted;
-      setStatus("Document edges auto-detected!");
+      detected = true;
     }
-
-    // Cleanup
-    src.delete();
-    gray.delete();
-    blurred.delete();
-    edged.delete();
-    contours.delete();
-    hierarchy.delete();
+    return detected;
   } catch (e) {
     console.warn("Auto-detection failed, using default corners:", e);
+    return false;
+  } finally {
+    if (bestContour) bestContour.delete();
+    if (hierarchy) hierarchy.delete();
+    if (contours) contours.delete();
+    if (kernel) kernel.delete();
+    if (edged) edged.delete();
+    if (blurred) blurred.delete();
+    if (gray) gray.delete();
+    if (src) src.delete();
   }
 }
 
