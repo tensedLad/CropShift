@@ -1333,7 +1333,7 @@ async function rotateImageRight() {
   const cx = w / 2;
   const cy = h / 2;
 
-  state.corners = state.corners.map(p => {
+  const mappedCorners = state.corners.map(p => {
     const x = p.x - cx;
     const y = p.y - cy;
     return {
@@ -1341,12 +1341,16 @@ async function rotateImageRight() {
       y: x + cx
     };
   });
+  const shiftAmount = state.corners.length === 8 ? 2 : 1;
+  state.corners = [...mappedCorners.slice(-shiftAmount), ...mappedCorners.slice(0, -shiftAmount)];
 
-  state.defaultCorners = state.defaultCorners.map(p => {
+  const mappedDefaultCorners = state.defaultCorners.map(p => {
     const x = p.x - cx;
     const y = p.y - cy;
     return { x: -y + cy, y: x + cx };
   });
+  const defShiftAmount = state.defaultCorners.length === 8 ? 2 : 1;
+  state.defaultCorners = [...mappedDefaultCorners.slice(-defShiftAmount), ...mappedDefaultCorners.slice(0, -defShiftAmount)];
 
   setBusy("Rotating image...");
   await buildSourceImageData();

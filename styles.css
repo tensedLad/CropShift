@@ -237,12 +237,6 @@ nav .h-7 {
   font-size: 14px;
 }
 
-#resetButton,
-#fitButton,
-#clearButton,
-#rotateButton {
-  /* Handled by .action-btn */
-}
 
 
 .action-btn.primary {
