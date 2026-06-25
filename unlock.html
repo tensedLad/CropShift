@@ -1,0 +1,115 @@
+<!DOCTYPE html>
+<html class="dark" lang="en">
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>CropShift - Unlock File</title>
+    <link rel="icon" type="image/svg+xml" href="logo.svg">
+    <link rel="apple-touch-icon" href="logo.svg">
+    <link href="https://fonts.googleapis.com/css2?family=Manrope:wght@400;500;600;700;800&family=Inter:wght@400;500;600&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&display=swap" rel="stylesheet">
+    <link href="styles.css" rel="stylesheet">
+    <style>
+        .material-symbols-outlined {
+            font-variation-settings: 'FILL' 0, 'wght' 400, 'GRAD' 0, 'opsz' 24;
+        }
+    </style>
+</head>
+<body data-tool="unlock">
+
+<!-- Top Navigation -->
+<nav>
+    <div>
+        <a class="brand-logo" href="./" aria-label="CropShift home">
+            <img src="logo.svg" alt="" aria-hidden="true">
+            <span>CropShift</span>
+        </a>
+        <div class="h-5"></div>
+        <span>Unlock File</span>
+    </div>
+</nav>
+
+<!-- Shared Sidebar (rendered by shell.js) -->
+<aside id="sidebar" class="pro-scrollbar"></aside>
+
+<!-- Main Workspace -->
+<main>
+  <div class="tool-screen">
+    <div class="pane-header">
+        <span class="pane-title">Unlock File</span>
+        <span id="unlockStatus" class="pane-badge" role="status" aria-live="polite">Ready</span>
+    </div>
+
+    <div class="tool-pane pro-scrollbar">
+      <div class="resizer-panel">
+
+        <input id="unlockFileInput" type="file" accept=".pdf,.zip,application/pdf,application/zip,application/x-zip-compressed" class="hidden" aria-label="Upload a protected file">
+
+        <button id="unlockDropzone" type="button" class="resizer-dropzone">
+            <span class="material-symbols-outlined">lock_open</span>
+            <strong>Drop, paste, or click to upload</strong>
+            <span class="resizer-dropzone-sub">Password-protected PDF or ZIP</span>
+        </button>
+
+        <div id="unlockWorkspace" class="resizer-workspace is-hidden">
+
+            <div class="resizer-card">
+                <div class="resizer-file-row">
+                    <span id="unlockFileIcon" class="material-symbols-outlined resizer-file-icon">lock</span>
+                    <div class="resizer-file-meta">
+                        <span id="unlockFileName" class="resizer-file-name">file</span>
+                        <span id="unlockFileInfo" class="resizer-file-info">&mdash;</span>
+                    </div>
+                    <button id="unlockChangeBtn" type="button" class="action-btn">
+                        <span class="material-symbols-outlined">swap_horiz</span> Change
+                    </button>
+                </div>
+            </div>
+
+            <div class="resizer-card resizer-controls">
+                <div class="resizer-control-row">
+                    <label for="unlockPassword" class="resizer-label">Password</label>
+                    <div class="unlock-pass-wrap">
+                        <input id="unlockPassword" type="password" class="unlock-pass" placeholder="Enter the file's password" autocomplete="off" spellcheck="false">
+                        <button id="unlockToggle" type="button" class="unlock-toggle" aria-label="Show password" title="Show password">
+                            <span class="material-symbols-outlined">visibility</span>
+                        </button>
+                    </div>
+                </div>
+                <p class="resizer-hint">Only works for files you can already open with the correct password. Your password is processed in this browser tab and never uploaded.</p>
+
+                <button id="unlockRunBtn" type="button" class="action-btn primary resizer-run" disabled>
+                    <span class="material-symbols-outlined">lock_open</span> Remove password
+                </button>
+            </div>
+
+            <div id="unlockResult" class="resizer-card resizer-result is-hidden">
+                <div class="resizer-result-grid">
+                    <div class="resizer-stat">
+                        <span class="resizer-stat-label">Status</span>
+                        <span class="resizer-stat-value resizer-stat-accent">Unlocked</span>
+                    </div>
+                    <div class="resizer-stat">
+                        <span class="resizer-stat-label">Output size</span>
+                        <span id="unlockNewSize" class="resizer-stat-value">&mdash;</span>
+                    </div>
+                </div>
+                <button id="unlockDownloadBtn" type="button" class="action-btn primary resizer-run" disabled>
+                    <span class="material-symbols-outlined">download</span> Download
+                </button>
+            </div>
+
+        </div>
+      </div>
+    </div>
+  </div>
+</main>
+
+<script src="shell.js"></script>
+<script src="unlock.js"></script>
+<script>
+    window.va = window.va || function () { (window.vaq = window.vaq || []).push(arguments); };
+</script>
+<script defer src="/_vercel/insights/script.js"></script>
+</body>
+</html>

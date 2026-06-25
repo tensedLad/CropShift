@@ -3,7 +3,7 @@
 <head>
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>CropShift - Premium Document Scanner</title>
+    <title>CropShift - Document Scanner</title>
     <link rel="icon" type="image/svg+xml" href="logo.svg">
     <link rel="apple-touch-icon" href="logo.svg">
     <link href="https://fonts.googleapis.com/css2?family=Manrope:wght@400;500;600;700;800&family=Inter:wght@400;500;600&display=swap" rel="stylesheet">
@@ -13,25 +13,6 @@
         .material-symbols-outlined {
             font-variation-settings: 'FILL' 0, 'wght' 400, 'GRAD' 0, 'opsz' 24;
         }
-        .pro-scrollbar::-webkit-scrollbar {
-            width: 4px;
-        }
-        .pro-scrollbar::-webkit-scrollbar-track {
-            background: transparent;
-        }
-        .pro-scrollbar::-webkit-scrollbar-thumb {
-            background: #444;
-            border-radius: 2px;
-        }
-        .is-hidden {
-            display: none !important;
-        }
-        .is-dragging {
-            border-color: #1473e6 !important;
-            background-color: rgba(20, 115, 230, 0.1) !important;
-        }
-        
-        /* Split-pane divider */
         .split-divider {
             width: 6px;
             cursor: col-resize;
@@ -60,13 +41,14 @@
             cursor: col-resize !important;
             user-select: none !important;
         }
-        
+        .is-dragging {
+            border-color: #1473e6 !important;
+            background-color: rgba(20, 115, 230, 0.1) !important;
+        }
         #sourceCanvas {
             cursor: crosshair;
             touch-action: none;
         }
-        
-        /* Quality input spinner hide */
         #qualityInput::-webkit-outer-spin-button,
         #qualityInput::-webkit-inner-spin-button {
             -webkit-appearance: none;
@@ -78,28 +60,25 @@
         }
     </style>
 </head>
-<body class="bg-zinc-900 text-[#e5e2e1] font-body-lg selection:bg-[#1473e6] selection:text-white antialiased overflow-hidden h-screen flex flex-col">
+<body data-tool="scanner">
 
 <!-- Top Navigation -->
-<nav class="bg-zinc-800 font-['Manrope'] h-14 border-b border-zinc-700 fixed top-0 left-0 w-full z-50 flex justify-between items-center px-6">
-    <div class="flex items-center gap-4">
+<nav>
+    <div>
         <a class="brand-logo" href="./" aria-label="CropShift home">
             <img src="logo.svg" alt="" aria-hidden="true">
             <span>CropShift</span>
         </a>
-        <div class="h-5 w-px bg-zinc-700 mx-1"></div>
-        <span id="activeToolTitle" class="text-blue-500 font-bold border-b-2 border-blue-500 h-14 flex items-center px-2 text-sm">Document Scanner</span>
+        <div class="h-5"></div>
+        <span>Document Scanner</span>
     </div>
-    <div id="scannerNav" class="flex items-center gap-4">
-        
-        <!-- Controls -->
+    <div id="scannerNav">
         <div class="top-controls flex items-center gap-2">
-            <!-- Mode Toggle -->
             <div id="cornerModeGroup" role="group" aria-label="Corner Mode">
                 <button type="button" data-mode="4" aria-pressed="true" class="mode-btn">4 Corners</button>
                 <button type="button" data-mode="8" aria-pressed="false" class="mode-btn">8 Corners</button>
             </div>
-            
+
             <div class="workspace-status flex items-center gap-2">
                 <span id="engineStatus">Ready</span>
                 <p id="statusMessage" role="status" aria-live="polite">Load an image</p>
@@ -118,97 +97,53 @@
             </button>
         </div>
 
-        <div class="h-7 w-px bg-zinc-700"></div>
+        <div class="h-7"></div>
 
-        <!-- Metadata -->
         <div class="workspace-meta flex items-center gap-5">
             <div class="meta-block flex flex-col items-end">
-                <span class="text-[8px] font-bold text-zinc-500 uppercase tracking-widest">File</span>
-                <span id="fileName" class="text-[10px] font-mono text-zinc-300 truncate max-w-[120px]">None loaded</span>
+                <span>File</span>
+                <span id="fileName">None loaded</span>
             </div>
-            <div class="h-7 w-px bg-zinc-700/50"></div>
+            <div class="h-7"></div>
             <div class="meta-block flex flex-col items-end">
-                <span class="text-[8px] font-bold text-zinc-500 uppercase tracking-widest">Size</span>
-                <span id="imageSize" class="text-[10px] font-mono text-zinc-300">-</span>
+                <span>Size</span>
+                <span id="imageSize">-</span>
             </div>
-            <div class="h-7 w-px bg-zinc-700/50"></div>
+            <div class="h-7"></div>
             <div class="meta-block flex flex-col items-end">
-                <span class="text-[8px] font-bold text-zinc-500 uppercase tracking-widest">File Size</span>
-                <span id="fileSizeMeta" class="text-[10px] font-mono text-zinc-300">-</span>
+                <span>File Size</span>
+                <span id="fileSizeMeta">-</span>
             </div>
-            <div class="h-7 w-px bg-zinc-700/50"></div>
+            <div class="h-7"></div>
             <div class="meta-block flex flex-col items-end">
-                <span class="text-[8px] font-bold text-zinc-500 uppercase tracking-widest">Export</span>
-                <span id="selectionSize" class="text-[10px] font-mono text-zinc-300">-</span>
+                <span>Export</span>
+                <span id="selectionSize">-</span>
             </div>
         </div>
     </div>
 </nav>
 
-<!-- Sidebar -->
-<aside class="fixed left-0 top-14 w-[260px] h-[calc(100vh-56px)] border-r bg-zinc-800 border-zinc-700 flex flex-col py-4 space-y-2 z-40 overflow-y-auto pro-scrollbar">
-    
-    <!-- Hidden File Input (Scanner) -->
-    <input id="fileInput" type="file" accept="image/*" class="hidden" aria-label="Upload image">
+<!-- Shared Sidebar (rendered by shell.js) -->
+<aside id="sidebar" class="pro-scrollbar"></aside>
 
-    <div class="px-4">
-        <h3 class="text-[10px] font-bold uppercase tracking-wider text-zinc-500 mb-3 font-label-caps">Tools</h3>
-        <nav id="toolList" class="tool-list" aria-label="Tools">
-            <button type="button" class="tool-btn is-active" data-tool="scanner" aria-pressed="true">
-                <span class="material-symbols-outlined">document_scanner</span>
-                <span class="tool-btn-text">
-                    <span class="tool-btn-title">Document Scanner</span>
-                    <span class="tool-btn-desc">Crop, deskew &amp; export</span>
-                </span>
-            </button>
-            <button type="button" class="tool-btn" data-tool="resizer" aria-pressed="false">
-                <span class="material-symbols-outlined">compress</span>
-                <span class="tool-btn-text">
-                    <span class="tool-btn-title">File Resizer</span>
-                    <span class="tool-btn-desc">Shrink image / PDF size</span>
-                </span>
-            </button>
-        </nav>
-    </div>
-
-    <!-- Ad Slots (hidden until real ads are placed) -->
-    <div class="px-4 mt-4 pb-4 space-y-3 flex-1 hidden">
-        <h3 class="text-[10px] font-bold uppercase tracking-wider text-zinc-500 mb-2 font-label-caps">Sponsored</h3>
-        <div class="h-28 w-full bg-blue-900/10 rounded flex items-center justify-center overflow-hidden border border-blue-900/30">
-            <span class="text-[9px] font-bold text-blue-500 uppercase tracking-widest">Ad Slot 1</span>
-        </div>
-        <div class="h-28 w-full bg-blue-900/10 rounded flex items-center justify-center overflow-hidden border border-blue-900/30">
-            <span class="text-[9px] font-bold text-blue-500 uppercase tracking-widest">Ad Slot 2</span>
-        </div>
-        <div class="h-28 w-full bg-blue-900/10 rounded flex items-center justify-center overflow-hidden border border-blue-900/30">
-            <span class="text-[9px] font-bold text-blue-500 uppercase tracking-widest">Ad Slot 3</span>
-        </div>
-        <div class="h-28 w-full bg-blue-900/10 rounded flex items-center justify-center overflow-hidden border border-blue-900/30">
-            <span class="text-[9px] font-bold text-blue-500 uppercase tracking-widest">Ad Slot 4</span>
-        </div>
-        <div class="h-28 w-full bg-blue-900/10 rounded flex items-center justify-center overflow-hidden border border-blue-900/30">
-            <span class="text-[9px] font-bold text-blue-500 uppercase tracking-widest">Ad Slot 5</span>
-        </div>
-    </div>
-</aside>
+<!-- Hidden File Input -->
+<input id="fileInput" type="file" accept="image/*" class="hidden" aria-label="Upload image">
 
 <!-- Main Workspace -->
-<main class="ml-[260px] pt-14 h-screen flex flex-col bg-zinc-900">
-  <!-- TOOL: Document Scanner -->
-  <div id="tool-scanner" class="tool-screen flex-1 flex flex-col overflow-hidden">
-    <div id="splitContainer" class="flex-1 flex overflow-hidden">
-        
+<main>
+  <div class="tool-screen">
+    <div id="splitContainer">
+
         <!-- Source Pane -->
-        <div id="sourcePane" class="flex flex-col relative" style="flex-basis: 50%; min-width: 200px;">
-            <div class="h-9 px-4 flex items-center justify-between bg-zinc-800 border-b border-zinc-700 z-10 shrink-0">
-                <span class="text-[10px] font-bold text-zinc-400 uppercase tracking-widest">Source</span>
+        <div id="sourcePane" style="flex-basis: 50%;">
+            <div>
+                <span>Source</span>
                 <button id="uploadZone" type="button" class="source-upload-btn" aria-label="Upload, drop, or paste an image">
                     <span class="material-symbols-outlined">upload</span> Upload
                 </button>
             </div>
-            <!-- Canvas Container -->
-            <div class="flex-1 relative flex items-center justify-center p-4 overflow-hidden bg-[#080808]">
-                <canvas id="sourceCanvas" class="relative z-10" tabindex="0" role="application" aria-label="Crop selection editor. Use the bracket keys to choose a corner and arrow keys to move it."></canvas>
+            <div>
+                <canvas id="sourceCanvas" tabindex="0" role="application" aria-label="Crop selection editor. Use the bracket keys to choose a corner and arrow keys to move it."></canvas>
                 <div id="emptyState" class="absolute inset-0 m-6 border border-dashed border-zinc-700 rounded-lg flex flex-col items-center justify-center gap-2 text-zinc-500 pointer-events-none bg-zinc-900/50 backdrop-blur-sm z-20">
                     <span class="material-symbols-outlined text-4xl">document_scanner</span>
                     <strong class="text-zinc-300 font-['Manrope'] text-lg">Drop an image here</strong>
@@ -221,25 +156,22 @@
         <div id="splitDivider" class="split-divider"><div class="grip"></div></div>
 
         <!-- Preview Pane -->
-        <div id="previewPane" class="flex flex-col relative" style="flex-basis: 50%; min-width: 200px;">
-            <div class="h-9 px-4 flex items-center justify-between bg-zinc-800 border-b border-zinc-700 z-10 shrink-0">
-                <span class="text-[10px] font-bold text-zinc-400 uppercase tracking-widest">Preview</span>
-                <span id="previewInfo" class="px-2 py-0.5 bg-zinc-700 text-zinc-300 text-[9px] font-bold rounded">Output</span>
+        <div id="previewPane" style="flex-basis: 50%;">
+            <div>
+                <span>Preview</span>
+                <span id="previewInfo">Output</span>
             </div>
-            <!-- Preview Canvas Area (fills most of the pane) -->
-            <div class="flex-1 relative flex items-center justify-center p-4 overflow-hidden bg-[#080808]">
-                <canvas id="previewCanvas" class="relative z-10" role="img" aria-label="Corrected crop preview"></canvas>
+            <div>
+                <canvas id="previewCanvas" role="img" aria-label="Corrected crop preview"></canvas>
                 <div id="previewEmpty" class="absolute inset-0 m-6 flex items-center justify-center text-zinc-600 font-bold uppercase tracking-widest text-xs pointer-events-none z-20">
                     Waiting for image
                 </div>
             </div>
-            <!-- Export Controls (inside preview pane, below canvas) -->
-            <div class="export-bar shrink-0 bg-zinc-800 border-t border-zinc-700 px-4 py-3 flex items-center justify-between gap-4">
-                
-                <div class="export-options flex items-center gap-3">
-                    <!-- Format Toggle -->
+            <!-- Export Controls -->
+            <div class="export-bar">
+                <div class="export-options">
                     <div class="flex items-center gap-2">
-                        <span class="text-zinc-500 text-[9px] font-black uppercase tracking-wider">Format</span>
+                        <span>Format</span>
                         <div id="formatGroup" role="group" aria-label="Export format">
                             <button type="button" data-format="image/jpeg" data-ext="jpg" aria-pressed="true" class="format-btn">JPG</button>
                             <button type="button" data-format="image/jpeg" data-ext="jpeg" aria-pressed="false" class="format-btn">JPEG</button>
@@ -247,28 +179,24 @@
                             <button type="button" data-format="image/webp" data-ext="webp" aria-pressed="false" class="format-btn">WEBP</button>
                         </div>
                     </div>
-                    
-                    <!-- Quality -->
+
                     <div class="flex items-center gap-2">
-                        <label id="qualityLabel" for="qualityInput" class="text-zinc-500 text-[9px] font-black uppercase tracking-wider">Quality</label>
+                        <label id="qualityLabel" for="qualityInput">Quality</label>
                         <div class="relative flex items-center">
-                            <input id="qualityInput" type="number" min="65" max="100" value="100" class="bg-zinc-700 border border-zinc-600 text-zinc-100 font-mono font-bold text-[11px] w-14 text-center rounded px-1 py-1 focus:ring-1 focus:ring-blue-500 outline-none">
+                            <input id="qualityInput" type="number" min="65" max="100" value="100">
                             <span class="text-zinc-400 text-[10px] font-bold ml-1">%</span>
                         </div>
                     </div>
 
-                    <!-- Target File Size -->
                     <div class="flex items-center gap-2">
-                        <label id="targetSizeLabel" for="targetSizeInput" class="text-zinc-500 text-[9px] font-black uppercase tracking-wider">Target</label>
+                        <label id="targetSizeLabel" for="targetSizeInput">Target</label>
                         <div class="relative flex items-center">
-                            <input id="targetSizeInput" type="number" min="1" placeholder="Auto" class="bg-zinc-700 border border-zinc-600 text-zinc-100 font-mono font-bold text-[11px] w-16 text-center rounded px-1 py-1 focus:ring-1 focus:ring-blue-500 outline-none">
+                            <input id="targetSizeInput" type="number" min="1" placeholder="Auto">
                             <span class="text-zinc-400 text-[10px] font-bold ml-1">KB</span>
                         </div>
                     </div>
                 </div>
 
-                <!-- Download -->
-                <!-- Download -->
                 <button id="downloadButton" disabled class="action-btn primary">
                     <span class="material-symbols-outlined">download</span> Download
                 </button>
@@ -277,109 +205,23 @@
 
     </div>
   </div>
-
-  <!-- TOOL: File Resizer -->
-  <div id="tool-resizer" class="tool-screen flex-1 flex flex-col overflow-hidden is-hidden">
-    <div class="h-9 px-4 flex items-center justify-between bg-zinc-800 border-b border-zinc-700 z-10 shrink-0">
-        <span class="text-[10px] font-bold text-zinc-400 uppercase tracking-widest">File Resizer</span>
-        <span id="resizerStatus" class="px-2 py-0.5 bg-zinc-700 text-zinc-300 text-[9px] font-bold rounded" role="status" aria-live="polite">Ready</span>
-    </div>
-
-    <div class="flex-1 overflow-y-auto pro-scrollbar p-6 flex justify-center bg-[#080808]">
-      <div class="resizer-panel">
-
-        <!-- Hidden input -->
-        <input id="resizerFileInput" type="file" accept="image/*,application/pdf" class="hidden" aria-label="Upload a file to resize">
-
-        <!-- Upload zone -->
-        <button id="resizerDropzone" type="button" class="resizer-dropzone">
-            <span class="material-symbols-outlined">upload_file</span>
-            <strong>Drop, paste, or click to upload</strong>
-            <span class="resizer-dropzone-sub">Images (JPG, PNG, WEBP&hellip;) and PDF &middot; up to ~50&nbsp;MB</span>
-        </button>
-
-        <!-- File workspace (hidden until a file is chosen) -->
-        <div id="resizerWorkspace" class="resizer-workspace is-hidden">
-
-            <div class="resizer-card">
-                <div class="resizer-file-row">
-                    <span id="resizerFileIcon" class="material-symbols-outlined resizer-file-icon">image</span>
-                    <div class="resizer-file-meta">
-                        <span id="resizerFileName" class="resizer-file-name">file</span>
-                        <span id="resizerFileInfo" class="resizer-file-info">&mdash;</span>
-                    </div>
-                    <button id="resizerChangeBtn" type="button" class="action-btn">
-                        <span class="material-symbols-outlined">swap_horiz</span> Change
-                    </button>
-                </div>
-
-                <div id="resizerThumbWrap" class="resizer-thumb-wrap is-hidden">
-                    <img id="resizerThumb" alt="Preview of the uploaded file" />
-                </div>
-            </div>
-
-            <div class="resizer-card resizer-controls">
-                <div class="resizer-control-row">
-                    <label for="resizerTargetInput" class="resizer-label">Target size</label>
-                    <div class="resizer-input-wrap">
-                        <input id="resizerTargetInput" type="number" min="1" placeholder="e.g. 200" class="resizer-number">
-                        <select id="resizerUnit" class="resizer-unit" aria-label="Target size unit">
-                            <option value="KB" selected>KB</option>
-                            <option value="MB">MB</option>
-                        </select>
-                    </div>
-                </div>
-                <p class="resizer-hint">We compress as little as needed to stay under your target while keeping the best possible quality.</p>
-
-                <button id="resizerRunBtn" type="button" class="action-btn primary resizer-run" disabled>
-                    <span class="material-symbols-outlined">compress</span> Resize file
-                </button>
-            </div>
-
-            <!-- Result -->
-            <div id="resizerResult" class="resizer-card resizer-result is-hidden">
-                <div class="resizer-result-grid">
-                    <div class="resizer-stat">
-                        <span class="resizer-stat-label">Original</span>
-                        <span id="resizerOrigSize" class="resizer-stat-value">&mdash;</span>
-                    </div>
-                    <span class="material-symbols-outlined resizer-arrow">arrow_forward</span>
-                    <div class="resizer-stat">
-                        <span class="resizer-stat-label">New size</span>
-                        <span id="resizerNewSize" class="resizer-stat-value resizer-stat-accent">&mdash;</span>
-                    </div>
-                    <div class="resizer-stat">
-                        <span class="resizer-stat-label">Saved</span>
-                        <span id="resizerSaved" class="resizer-stat-value">&mdash;</span>
-                    </div>
-                </div>
-                <button id="resizerDownloadBtn" type="button" class="action-btn primary resizer-run" disabled>
-                    <span class="material-symbols-outlined">download</span> Download
-                </button>
-            </div>
-
-        </div>
-      </div>
-    </div>
-  </div>
 </main>
 
-<!-- OpenCV.js for auto document detection -->
-    <script src="app.js"></script>
-    <script src="resizer.js"></script>
-    <script>
-        window.va = window.va || function () { (window.vaq = window.vaq || []).push(arguments); };
-    </script>
-    <script defer src="/_vercel/insights/script.js"></script>
-    <!-- Must be defined BEFORE opencv.js loads so Emscripten picks it up -->
-    <script>
-        var Module = {
-            onRuntimeInitialized: function () {
-                window.onOpenCvReady && window.onOpenCvReady();
-            }
-        };
-    </script>
-    <script async src="https://docs.opencv.org/4.9.0/opencv.js" onerror="window.onOpenCvFailed && window.onOpenCvFailed()" type="text/javascript"></script>
+<script src="shell.js"></script>
+<script src="app.js"></script>
+<script>
+    window.va = window.va || function () { (window.vaq = window.vaq || []).push(arguments); };
+</script>
+<script defer src="/_vercel/insights/script.js"></script>
+<!-- Must be defined BEFORE opencv.js loads so Emscripten picks it up -->
+<script>
+    var Module = {
+        onRuntimeInitialized: function () {
+            window.onOpenCvReady && window.onOpenCvReady();
+        }
+    };
+</script>
+<script async src="https://docs.opencv.org/4.9.0/opencv.js" onerror="window.onOpenCvFailed && window.onOpenCvFailed()" type="text/javascript"></script>
 
 <!-- Split-pane drag logic -->
 <script>
@@ -403,12 +245,11 @@
     const rect = container.getBoundingClientRect();
     const offsetX = e.clientX - rect.left;
     let ratio = offsetX / rect.width;
-    ratio = Math.max(0.2, Math.min(0.8, ratio)); // clamp 20%-80%
+    ratio = Math.max(0.2, Math.min(0.8, ratio));
     const sourceW = ratio * 100;
     const previewW = 100 - sourceW;
     sourcePane.style.flexBasis = sourceW + '%';
     previewPane.style.flexBasis = previewW + '%';
-    // Trigger canvas resize
     if (typeof resizeCanvases === 'function') {
       resizeCanvases();
       drawSource();

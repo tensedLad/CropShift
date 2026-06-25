@@ -1,0 +1,125 @@
+<!DOCTYPE html>
+<html class="dark" lang="en">
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>CropShift - File Resizer</title>
+    <link rel="icon" type="image/svg+xml" href="logo.svg">
+    <link rel="apple-touch-icon" href="logo.svg">
+    <link href="https://fonts.googleapis.com/css2?family=Manrope:wght@400;500;600;700;800&family=Inter:wght@400;500;600&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&display=swap" rel="stylesheet">
+    <link href="styles.css" rel="stylesheet">
+    <style>
+        .material-symbols-outlined {
+            font-variation-settings: 'FILL' 0, 'wght' 400, 'GRAD' 0, 'opsz' 24;
+        }
+    </style>
+</head>
+<body data-tool="resizer">
+
+<!-- Top Navigation -->
+<nav>
+    <div>
+        <a class="brand-logo" href="./" aria-label="CropShift home">
+            <img src="logo.svg" alt="" aria-hidden="true">
+            <span>CropShift</span>
+        </a>
+        <div class="h-5"></div>
+        <span>File Resizer</span>
+    </div>
+</nav>
+
+<!-- Shared Sidebar (rendered by shell.js) -->
+<aside id="sidebar" class="pro-scrollbar"></aside>
+
+<!-- Main Workspace -->
+<main>
+  <div class="tool-screen">
+    <div class="pane-header">
+        <span class="pane-title">File Resizer</span>
+        <span id="resizerStatus" class="pane-badge" role="status" aria-live="polite">Ready</span>
+    </div>
+
+    <div class="tool-pane pro-scrollbar">
+      <div class="resizer-panel">
+
+        <input id="resizerFileInput" type="file" accept="image/*,application/pdf" class="hidden" aria-label="Upload a file to resize">
+
+        <button id="resizerDropzone" type="button" class="resizer-dropzone">
+            <span class="material-symbols-outlined">upload_file</span>
+            <strong>Drop, paste, or click to upload</strong>
+            <span class="resizer-dropzone-sub">Images (JPG, PNG, WEBP&hellip;) and PDF &middot; up to ~50&nbsp;MB</span>
+        </button>
+
+        <div id="resizerWorkspace" class="resizer-workspace is-hidden">
+
+            <div class="resizer-card">
+                <div class="resizer-file-row">
+                    <span id="resizerFileIcon" class="material-symbols-outlined resizer-file-icon">image</span>
+                    <div class="resizer-file-meta">
+                        <span id="resizerFileName" class="resizer-file-name">file</span>
+                        <span id="resizerFileInfo" class="resizer-file-info">&mdash;</span>
+                    </div>
+                    <button id="resizerChangeBtn" type="button" class="action-btn">
+                        <span class="material-symbols-outlined">swap_horiz</span> Change
+                    </button>
+                </div>
+
+                <div id="resizerThumbWrap" class="resizer-thumb-wrap is-hidden">
+                    <img id="resizerThumb" alt="Preview of the uploaded file" />
+                </div>
+            </div>
+
+            <div class="resizer-card resizer-controls">
+                <div class="resizer-control-row">
+                    <label for="resizerTargetInput" class="resizer-label">Target size</label>
+                    <div class="resizer-input-wrap">
+                        <input id="resizerTargetInput" type="number" min="1" placeholder="e.g. 200" class="resizer-number">
+                        <select id="resizerUnit" class="resizer-unit" aria-label="Target size unit">
+                            <option value="KB" selected>KB</option>
+                            <option value="MB">MB</option>
+                        </select>
+                    </div>
+                </div>
+                <p class="resizer-hint">We compress as little as needed to stay under your target while keeping the best possible quality.</p>
+
+                <button id="resizerRunBtn" type="button" class="action-btn primary resizer-run" disabled>
+                    <span class="material-symbols-outlined">compress</span> Resize file
+                </button>
+            </div>
+
+            <div id="resizerResult" class="resizer-card resizer-result is-hidden">
+                <div class="resizer-result-grid">
+                    <div class="resizer-stat">
+                        <span class="resizer-stat-label">Original</span>
+                        <span id="resizerOrigSize" class="resizer-stat-value">&mdash;</span>
+                    </div>
+                    <span class="material-symbols-outlined resizer-arrow">arrow_forward</span>
+                    <div class="resizer-stat">
+                        <span class="resizer-stat-label">New size</span>
+                        <span id="resizerNewSize" class="resizer-stat-value resizer-stat-accent">&mdash;</span>
+                    </div>
+                    <div class="resizer-stat">
+                        <span class="resizer-stat-label">Saved</span>
+                        <span id="resizerSaved" class="resizer-stat-value">&mdash;</span>
+                    </div>
+                </div>
+                <button id="resizerDownloadBtn" type="button" class="action-btn primary resizer-run" disabled>
+                    <span class="material-symbols-outlined">download</span> Download
+                </button>
+            </div>
+
+        </div>
+      </div>
+    </div>
+  </div>
+</main>
+
+<script src="shell.js"></script>
+<script src="resizer.js"></script>
+<script>
+    window.va = window.va || function () { (window.vaq = window.vaq || []).push(arguments); };
+</script>
+<script defer src="/_vercel/insights/script.js"></script>
+</body>
+</html>

@@ -24,11 +24,6 @@
 
   function init() {
     [
-      "toolList",
-      "tool-scanner",
-      "tool-resizer",
-      "scannerNav",
-      "activeToolTitle",
       "resizerStatus",
       "resizerFileInput",
       "resizerDropzone",
@@ -51,16 +46,8 @@
       el[id] = document.getElementById(id);
     });
 
-    window.activeTool = window.activeTool || "scanner";
+    if (!el.resizerDropzone) return;
 
-    // Tool switching
-    if (el.toolList) {
-      el.toolList.querySelectorAll(".tool-btn").forEach((btn) => {
-        btn.addEventListener("click", () => activateTool(btn.dataset.tool));
-      });
-    }
-
-    // Resizer wiring
     el.resizerDropzone.addEventListener("click", () => el.resizerFileInput.click());
     el.resizerChangeBtn.addEventListener("click", () => el.resizerFileInput.click());
     el.resizerFileInput.addEventListener("change", (e) => {
@@ -78,37 +65,12 @@
     document.addEventListener("paste", onResizerPaste);
   }
 
-  function activateTool(name) {
-    if (!name) return;
-    window.activeTool = name;
-
-    el.toolList.querySelectorAll(".tool-btn").forEach((b) => {
-      const active = b.dataset.tool === name;
-      b.classList.toggle("is-active", active);
-      b.setAttribute("aria-pressed", active ? "true" : "false");
-    });
-
-    el["tool-scanner"].classList.toggle("is-hidden", name !== "scanner");
-    el["tool-resizer"].classList.toggle("is-hidden", name !== "resizer");
-    if (el.scannerNav) el.scannerNav.classList.toggle("is-hidden", name !== "scanner");
-    if (el.activeToolTitle) {
-      el.activeToolTitle.textContent = name === "resizer" ? "File Resizer" : "Document Scanner";
-    }
-
-    if (name === "scanner") {
-      // The scanner canvases may have been sized to 0 while hidden.
-      if (typeof resizeCanvases === "function") resizeCanvases();
-      if (typeof drawSource === "function") drawSource();
-      if (typeof queuePreviewRender === "function") queuePreviewRender();
-    }
-  }
-
   // ---------- File intake ----------
   function bindResizerDragAndDrop() {
-    const zone = el["tool-resizer"];
+    const zone = document;
     let counter = 0;
 
-    const isActive = () => window.activeTool === "resizer";
+    const isActive = () => true;
 
     zone.addEventListener("dragenter", (e) => {
       if (!isActive()) return;

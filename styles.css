@@ -374,6 +374,57 @@ main {
   margin-left: 260px;
   padding-top: 56px;
   background: var(--bg);
+  display: flex;
+  flex-direction: column;
+}
+
+/* Each tool page mounts a single full-height screen inside <main>. */
+.tool-screen {
+  flex: 1 1 auto;
+  min-height: 0;
+  display: flex;
+  flex-direction: column;
+}
+
+/* Scrollable content area used by the Resizer / Unlock tools. */
+.tool-pane {
+  flex: 1 1 auto;
+  min-height: 0;
+  overflow-y: auto;
+  display: flex;
+  justify-content: center;
+  padding: 24px;
+  background: #080808;
+}
+
+/* Reusable pane header (matches the scanner Source/Preview headers). */
+.pane-header {
+  flex: 0 0 auto;
+  min-height: 36px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  border-bottom: 1px solid var(--border);
+  background: var(--surface);
+  padding: 0 16px;
+}
+
+.pane-title {
+  color: #a1a1aa;
+  font-size: 0.62rem;
+  font-weight: 900;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+}
+
+.pane-badge {
+  border-radius: 5px;
+  background: var(--surface-2);
+  color: #d4d4d8;
+  padding: 3px 8px;
+  font-size: 0.58rem;
+  font-weight: 900;
+  letter-spacing: 0.06em;
 }
 
 #splitContainer {
@@ -547,7 +598,8 @@ body.is-resizing * {
 }
 
 .export-options span,
-#qualityLabel {
+#qualityLabel,
+#targetSizeLabel {
   color: var(--subtle);
   font-size: 0.58rem;
   font-weight: 900;
@@ -827,6 +879,7 @@ body.is-resizing * {
   background: var(--surface-2);
   color: var(--muted);
   text-align: left;
+  text-decoration: none;
   cursor: pointer;
   transition: border-color 120ms ease, background 120ms ease, color 120ms ease;
 }
@@ -1078,6 +1131,53 @@ body.is-resizing * {
   color: var(--subtle);
 }
 
+/* Unlock password field */
+.unlock-pass-wrap {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.unlock-pass {
+  width: 220px;
+  max-width: 52vw;
+  border: 1px solid #52525b;
+  border-radius: 6px;
+  background: var(--surface-2);
+  color: #f4f4f5;
+  font-size: 0.82rem;
+  font-weight: 600;
+  outline: none;
+  padding: 8px 10px;
+}
+
+.unlock-pass:focus {
+  border-color: var(--accent);
+}
+
+.unlock-toggle {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 36px;
+  height: 36px;
+  border: 1px solid #52525b;
+  border-radius: 6px;
+  background: var(--surface-2);
+  color: var(--muted);
+  cursor: pointer;
+  transition: color 120ms ease, border-color 120ms ease;
+}
+
+.unlock-toggle:hover {
+  color: #e4e4e7;
+  border-color: var(--accent);
+}
+
+.unlock-toggle .material-symbols-outlined {
+  font-size: 18px;
+}
+
 .resizer-run {
   width: 100%;
   min-height: 40px;
@@ -1130,17 +1230,20 @@ body.is-resizing * {
   flex: 0 0 auto;
 }
 
-#resizerStatus.is-working {
+#resizerStatus.is-working,
+#unlockStatus.is-working {
   background: #30270e;
   color: var(--warning);
 }
 
-#resizerStatus.is-error {
+#resizerStatus.is-error,
+#unlockStatus.is-error {
   background: #351818;
   color: var(--danger);
 }
 
-#resizerStatus.is-done {
+#resizerStatus.is-done,
+#unlockStatus.is-done {
   background: #16351f;
   color: var(--ok);
 }
