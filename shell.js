@@ -40,33 +40,67 @@
     });
   }
 
+  function iconSpan(icon) {
+    return '<span class="material-symbols-outlined">' + escapeHtml(icon) + "</span>";
+  }
+
+  function textBlock(tool) {
+    return (
+      '<span class="tool-btn-text">' +
+      '<span class="tool-btn-title">' +
+      escapeHtml(tool.title) +
+      "</span>" +
+      '<span class="tool-btn-desc">' +
+      escapeHtml(tool.desc) +
+      "</span>" +
+      "</span>"
+    );
+  }
+
+  function toolLink(tool, isActive) {
+    return (
+      '<a class="tool-btn' +
+      (isActive ? " is-active" : "") +
+      '" href="' +
+      tool.href +
+      '"' +
+      (isActive ? ' aria-current="page"' : "") +
+      ">" +
+      iconSpan(tool.icon) +
+      textBlock(tool) +
+      "</a>"
+    );
+  }
+
+  // On the scanner page the Document Scanner item becomes an accordion that
+  // slides down to reveal the upload dropzone (app.js wires #fileInput/#uploadZone).
+  function scannerAccordion(tool) {
+    return (
+      '<div class="tool-item">' +
+      '<button type="button" id="scannerToolBtn" class="tool-btn is-active is-expandable" aria-expanded="true" aria-controls="scannerUploadPanel">' +
+      iconSpan(tool.icon) +
+      textBlock(tool) +
+      '<span class="material-symbols-outlined tool-chevron">expand_more</span>' +
+      "</button>" +
+      '<div id="scannerUploadPanel" class="tool-panel is-open">' +
+      '<input id="fileInput" type="file" accept="image/*" class="hidden" aria-label="Upload image">' +
+      '<button id="uploadZone" type="button" class="upload-zone" aria-label="Upload, drop, or paste an image">' +
+      '<span class="material-symbols-outlined">cloud_upload</span>' +
+      "<p>Drop, paste, or click<br>to upload</p>" +
+      "</button>" +
+      "</div>" +
+      "</div>"
+    );
+  }
+
   function build() {
     const aside = document.getElementById("sidebar");
     if (!aside) return;
 
     const items = TOOLS.map((tool) => {
       const isActive = tool.id === active;
-      return (
-        '<a class="tool-btn' +
-        (isActive ? " is-active" : "") +
-        '" href="' +
-        tool.href +
-        '"' +
-        (isActive ? ' aria-current="page"' : "") +
-        ">" +
-        '<span class="material-symbols-outlined">' +
-        escapeHtml(tool.icon) +
-        "</span>" +
-        '<span class="tool-btn-text">' +
-        '<span class="tool-btn-title">' +
-        escapeHtml(tool.title) +
-        "</span>" +
-        '<span class="tool-btn-desc">' +
-        escapeHtml(tool.desc) +
-        "</span>" +
-        "</span>" +
-        "</a>"
-      );
+      if (tool.id === "scanner" && isActive) return scannerAccordion(tool);
+      return toolLink(tool, isActive);
     }).join("");
 
     aside.innerHTML =
@@ -76,9 +110,21 @@
       items +
       "</div>" +
       "</div>";
+
+    const btn = document.getElementById("scannerToolBtn");
+    const panel = document.getElementById("scannerUploadPanel");
+    if (btn && panel) {
+      btn.addEventListener("click", () => {
+        const open = panel.classList.toggle("is-open");
+        btn.setAttribute("aria-expanded", open ? "true" : "false");
+      });
+    }
   }
 
-  if (document.readyState === "loading") {
+  // Build immediately when possible so app.js can bind #uploadZone/#fileInput.
+  if (document.getElementById("sidebar")) {
+    build();
+  } else if (document.readyState === "loading") {
     document.addEventListener("DOMContentLoaded", build);
   } else {
     build();

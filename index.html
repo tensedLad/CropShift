@@ -123,11 +123,8 @@
     </div>
 </nav>
 
-<!-- Shared Sidebar (rendered by shell.js) -->
+<!-- Shared Sidebar (rendered by shell.js, incl. scanner upload dropzone) -->
 <aside id="sidebar" class="pro-scrollbar"></aside>
-
-<!-- Hidden File Input -->
-<input id="fileInput" type="file" accept="image/*" class="hidden" aria-label="Upload image">
 
 <!-- Main Workspace -->
 <main>
@@ -138,9 +135,6 @@
         <div id="sourcePane" style="flex-basis: 50%;">
             <div>
                 <span>Source</span>
-                <button id="uploadZone" type="button" class="source-upload-btn" aria-label="Upload, drop, or paste an image">
-                    <span class="material-symbols-outlined">upload</span> Upload
-                </button>
             </div>
             <div>
                 <canvas id="sourceCanvas" tabindex="0" role="application" aria-label="Crop selection editor. Use the bracket keys to choose a corner and arrow keys to move it."></canvas>

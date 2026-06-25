@@ -323,7 +323,7 @@ aside h3 {
   text-transform: uppercase;
 }
 
-#uploadZone {
+.upload-zone {
   width: 100%;
   min-height: 150px;
   display: flex;
@@ -341,25 +341,25 @@ aside h3 {
   transition: border-color 140ms ease, background-color 140ms ease;
 }
 
-#uploadZone:hover,
-#uploadZone:focus-visible,
-#uploadZone.is-dragging {
+.upload-zone:hover,
+.upload-zone:focus-visible,
+.upload-zone.is-dragging {
   border-color: var(--accent);
   background: rgba(20, 115, 230, 0.1);
   outline: none;
 }
 
-#uploadZone .material-symbols-outlined {
+.upload-zone .material-symbols-outlined {
   color: #52525b;
   font-size: 1.7rem;
 }
 
-#uploadZone:hover .material-symbols-outlined,
-#uploadZone.is-dragging .material-symbols-outlined {
+.upload-zone:hover .material-symbols-outlined,
+.upload-zone.is-dragging .material-symbols-outlined {
   color: #3b82f6;
 }
 
-#uploadZone p {
+.upload-zone p {
   margin: 0;
   color: #a1a1aa;
   font-size: 0.66rem;
@@ -834,38 +834,46 @@ body.is-resizing * {
   }
 }
 
-/* ===== Scanner source upload button ===== */
-.source-upload-btn {
-  display: inline-flex;
-  align-items: center;
-  gap: 5px;
-  min-height: 24px;
-  padding: 0 10px;
-  border: 1px solid var(--border);
-  border-radius: 6px;
-  background: var(--surface-3);
-  color: #fff;
-  cursor: pointer;
-  font-size: 0.62rem;
-  font-weight: 900;
-  letter-spacing: 0.04em;
-  text-transform: uppercase;
-  transition: background 120ms ease;
-}
-
-.source-upload-btn:hover {
-  background: var(--accent);
-}
-
-.source-upload-btn .material-symbols-outlined {
-  font-size: 16px;
-}
-
 /* ===== Tools sidebar ===== */
 .tool-list {
   display: flex;
   flex-direction: column;
   gap: 8px;
+}
+
+/* Accordion: Document Scanner item with a slide-down upload dropzone. */
+.tool-item {
+  display: flex;
+  flex-direction: column;
+}
+
+.tool-btn.is-expandable {
+  cursor: pointer;
+}
+
+.tool-chevron {
+  margin-left: auto;
+  font-size: 20px;
+  flex: 0 0 auto;
+  transition: transform 220ms ease;
+}
+
+.tool-btn[aria-expanded="true"] .tool-chevron {
+  transform: rotate(180deg);
+}
+
+.tool-panel {
+  overflow: hidden;
+  max-height: 0;
+  margin-top: 0;
+  opacity: 0;
+  transition: max-height 260ms ease, opacity 200ms ease, margin-top 260ms ease;
+}
+
+.tool-panel.is-open {
+  max-height: 280px;
+  margin-top: 8px;
+  opacity: 1;
 }
 
 .tool-btn {
