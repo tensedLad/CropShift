@@ -136,16 +136,19 @@ function bindEvents() {
   let dragCounter = 0;
 
   document.addEventListener("dragenter", (event) => {
+    if (!scannerIsActive()) return;
     event.preventDefault();
     dragCounter++;
     els.uploadZone.classList.add("is-dragging");
   });
 
   document.addEventListener("dragover", (event) => {
+    if (!scannerIsActive()) return;
     event.preventDefault();
   });
 
   document.addEventListener("dragleave", (event) => {
+    if (!scannerIsActive()) return;
     event.preventDefault();
     dragCounter--;
     if (dragCounter <= 0) {
@@ -155,6 +158,7 @@ function bindEvents() {
   });
 
   document.addEventListener("drop", (event) => {
+    if (!scannerIsActive()) return;
     event.preventDefault();
     event.stopPropagation();
     dragCounter = 0;
@@ -230,7 +234,12 @@ function bindEvents() {
   els.downloadButton.addEventListener("click", downloadCrop);
 }
 
+function scannerIsActive() {
+  return (window.activeTool || "scanner") === "scanner";
+}
+
 function onPasteImage(event) {
+  if (!scannerIsActive()) return;
   const file = getClipboardImageFile(event.clipboardData);
   if (!file) return;
 

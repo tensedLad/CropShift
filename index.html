@@ -88,9 +88,9 @@
             <span>CropShift</span>
         </a>
         <div class="h-5 w-px bg-zinc-700 mx-1"></div>
-        <span class="text-blue-500 font-bold border-b-2 border-blue-500 h-14 flex items-center px-2 cursor-pointer text-sm">Workspace</span>
+        <span id="activeToolTitle" class="text-blue-500 font-bold border-b-2 border-blue-500 h-14 flex items-center px-2 text-sm">Document Scanner</span>
     </div>
-    <div class="flex items-center gap-4">
+    <div id="scannerNav" class="flex items-center gap-4">
         
         <!-- Controls -->
         <div class="top-controls flex items-center gap-2">
@@ -148,15 +148,27 @@
 <!-- Sidebar -->
 <aside class="fixed left-0 top-14 w-[260px] h-[calc(100vh-56px)] border-r bg-zinc-800 border-zinc-700 flex flex-col py-4 space-y-2 z-40 overflow-y-auto pro-scrollbar">
     
-    <!-- Hidden File Input -->
+    <!-- Hidden File Input (Scanner) -->
     <input id="fileInput" type="file" accept="image/*" class="hidden" aria-label="Upload image">
 
     <div class="px-4">
-        <h3 class="text-[10px] font-bold uppercase tracking-wider text-zinc-500 mb-3 font-label-caps">Upload Area</h3>
-        <button id="uploadZone" type="button" class="w-full border-2 border-dashed border-zinc-600 rounded-lg p-5 flex flex-col items-center justify-center text-center gap-2 hover:border-[#1473e6] transition-colors group cursor-pointer bg-zinc-800/20 outline-none" aria-label="Upload, drop, or paste an image">
-            <span class="material-symbols-outlined text-2xl text-zinc-600 group-hover:text-blue-500 transition-colors" data-icon="cloud_upload">cloud_upload</span>
-            <p class="text-[10px] font-bold text-zinc-400 uppercase tracking-tight">Drop, paste, or click<br/>to upload</p>
-        </button>
+        <h3 class="text-[10px] font-bold uppercase tracking-wider text-zinc-500 mb-3 font-label-caps">Tools</h3>
+        <nav id="toolList" class="tool-list" aria-label="Tools">
+            <button type="button" class="tool-btn is-active" data-tool="scanner" aria-pressed="true">
+                <span class="material-symbols-outlined">document_scanner</span>
+                <span class="tool-btn-text">
+                    <span class="tool-btn-title">Document Scanner</span>
+                    <span class="tool-btn-desc">Crop, deskew &amp; export</span>
+                </span>
+            </button>
+            <button type="button" class="tool-btn" data-tool="resizer" aria-pressed="false">
+                <span class="material-symbols-outlined">compress</span>
+                <span class="tool-btn-text">
+                    <span class="tool-btn-title">File Resizer</span>
+                    <span class="tool-btn-desc">Shrink image / PDF size</span>
+                </span>
+            </button>
+        </nav>
     </div>
 
     <!-- Ad Slots (hidden until real ads are placed) -->
@@ -182,12 +194,17 @@
 
 <!-- Main Workspace -->
 <main class="ml-[260px] pt-14 h-screen flex flex-col bg-zinc-900">
+  <!-- TOOL: Document Scanner -->
+  <div id="tool-scanner" class="tool-screen flex-1 flex flex-col overflow-hidden">
     <div id="splitContainer" class="flex-1 flex overflow-hidden">
         
         <!-- Source Pane -->
         <div id="sourcePane" class="flex flex-col relative" style="flex-basis: 50%; min-width: 200px;">
             <div class="h-9 px-4 flex items-center justify-between bg-zinc-800 border-b border-zinc-700 z-10 shrink-0">
                 <span class="text-[10px] font-bold text-zinc-400 uppercase tracking-widest">Source</span>
+                <button id="uploadZone" type="button" class="source-upload-btn" aria-label="Upload, drop, or paste an image">
+                    <span class="material-symbols-outlined">upload</span> Upload
+                </button>
             </div>
             <!-- Canvas Container -->
             <div class="flex-1 relative flex items-center justify-center p-4 overflow-hidden bg-[#080808]">
@@ -259,10 +276,97 @@
         </div>
 
     </div>
+  </div>
+
+  <!-- TOOL: File Resizer -->
+  <div id="tool-resizer" class="tool-screen flex-1 flex flex-col overflow-hidden is-hidden">
+    <div class="h-9 px-4 flex items-center justify-between bg-zinc-800 border-b border-zinc-700 z-10 shrink-0">
+        <span class="text-[10px] font-bold text-zinc-400 uppercase tracking-widest">File Resizer</span>
+        <span id="resizerStatus" class="px-2 py-0.5 bg-zinc-700 text-zinc-300 text-[9px] font-bold rounded" role="status" aria-live="polite">Ready</span>
+    </div>
+
+    <div class="flex-1 overflow-y-auto pro-scrollbar p-6 flex justify-center bg-[#080808]">
+      <div class="resizer-panel">
+
+        <!-- Hidden input -->
+        <input id="resizerFileInput" type="file" accept="image/*,application/pdf" class="hidden" aria-label="Upload a file to resize">
+
+        <!-- Upload zone -->
+        <button id="resizerDropzone" type="button" class="resizer-dropzone">
+            <span class="material-symbols-outlined">upload_file</span>
+            <strong>Drop, paste, or click to upload</strong>
+            <span class="resizer-dropzone-sub">Images (JPG, PNG, WEBP&hellip;) and PDF &middot; up to ~50&nbsp;MB</span>
+        </button>
+
+        <!-- File workspace (hidden until a file is chosen) -->
+        <div id="resizerWorkspace" class="resizer-workspace is-hidden">
+
+            <div class="resizer-card">
+                <div class="resizer-file-row">
+                    <span id="resizerFileIcon" class="material-symbols-outlined resizer-file-icon">image</span>
+                    <div class="resizer-file-meta">
+                        <span id="resizerFileName" class="resizer-file-name">file</span>
+                        <span id="resizerFileInfo" class="resizer-file-info">&mdash;</span>
+                    </div>
+                    <button id="resizerChangeBtn" type="button" class="action-btn">
+                        <span class="material-symbols-outlined">swap_horiz</span> Change
+                    </button>
+                </div>
+
+                <div id="resizerThumbWrap" class="resizer-thumb-wrap is-hidden">
+                    <img id="resizerThumb" alt="Preview of the uploaded file" />
+                </div>
+            </div>
+
+            <div class="resizer-card resizer-controls">
+                <div class="resizer-control-row">
+                    <label for="resizerTargetInput" class="resizer-label">Target size</label>
+                    <div class="resizer-input-wrap">
+                        <input id="resizerTargetInput" type="number" min="1" placeholder="e.g. 200" class="resizer-number">
+                        <select id="resizerUnit" class="resizer-unit" aria-label="Target size unit">
+                            <option value="KB" selected>KB</option>
+                            <option value="MB">MB</option>
+                        </select>
+                    </div>
+                </div>
+                <p class="resizer-hint">We compress as little as needed to stay under your target while keeping the best possible quality.</p>
+
+                <button id="resizerRunBtn" type="button" class="action-btn primary resizer-run" disabled>
+                    <span class="material-symbols-outlined">compress</span> Resize file
+                </button>
+            </div>
+
+            <!-- Result -->
+            <div id="resizerResult" class="resizer-card resizer-result is-hidden">
+                <div class="resizer-result-grid">
+                    <div class="resizer-stat">
+                        <span class="resizer-stat-label">Original</span>
+                        <span id="resizerOrigSize" class="resizer-stat-value">&mdash;</span>
+                    </div>
+                    <span class="material-symbols-outlined resizer-arrow">arrow_forward</span>
+                    <div class="resizer-stat">
+                        <span class="resizer-stat-label">New size</span>
+                        <span id="resizerNewSize" class="resizer-stat-value resizer-stat-accent">&mdash;</span>
+                    </div>
+                    <div class="resizer-stat">
+                        <span class="resizer-stat-label">Saved</span>
+                        <span id="resizerSaved" class="resizer-stat-value">&mdash;</span>
+                    </div>
+                </div>
+                <button id="resizerDownloadBtn" type="button" class="action-btn primary resizer-run" disabled>
+                    <span class="material-symbols-outlined">download</span> Download
+                </button>
+            </div>
+
+        </div>
+      </div>
+    </div>
+  </div>
 </main>
 
 <!-- OpenCV.js for auto document detection -->
     <script src="app.js"></script>
+    <script src="resizer.js"></script>
     <script>
         window.va = window.va || function () { (window.vaq = window.vaq || []).push(arguments); };
     </script>
