@@ -7,6 +7,7 @@ const state = {
   previewCtx: null,
   sourceData: null,
   fileName: "",
+  fileSize: 0,
   corners: [],
   defaultCorners: [],
   view: { scale: 1, offsetX: 0, offsetY: 0, width: 0, height: 0 },
@@ -90,6 +91,9 @@ function bindElements() {
     "formatGroup",
     "qualityInput",
     "qualityLabel",
+    "targetSizeInput",
+    "targetSizeLabel",
+    "fileSizeMeta",
     "downloadButton"
   ].forEach((id) => {
     els[id] = document.getElementById(id);
@@ -212,6 +216,17 @@ function bindEvents() {
     els.qualityInput.value = val;
   });
 
+  els.targetSizeInput.addEventListener("change", () => {
+    const raw = els.targetSizeInput.value.trim();
+    if (raw === "") return;
+    let val = parseInt(raw, 10);
+    if (isNaN(val) || val < 1) {
+      els.targetSizeInput.value = "";
+      return;
+    }
+    els.targetSizeInput.value = val;
+  });
+
   els.downloadButton.addEventListener("click", downloadCrop);
 }
 
@@ -287,6 +302,8 @@ async function loadFile(file) {
     }
     
     state.fileName = file.name;
+    state.fileSize = file.size || 0;
+    els.targetSizeInput.value = state.fileSize ? Math.max(1, Math.round(state.fileSize / 1024)) : "";
     state.rotation = 0;
     await buildSourceImageData();
     initializeCorners();
@@ -662,7 +679,12 @@ async function downloadCrop() {
 
     const mime = state.selectedFormat;
     const quality = Math.max(0.65, Math.min(1, parseInt(els.qualityInput.value, 10) / 100));
-    const blob = await canvasToBlob(canvas, mime, quality);
+
+    const targetKb = parseInt(els.targetSizeInput.value, 10);
+    const targetBytes = !isNaN(targetKb) && targetKb >= 1 ? targetKb * 1024 : 0;
+    if (targetBytes) setBusy("Compressing to target size...");
+    const blob = await encodeWithinTarget(canvas, mime, quality, targetBytes);
+
     const extension = state.selectedExt;
     const baseName = state.fileName ? state.fileName.replace(/\.[^/.]+$/, "") : "output";
     const link = document.createElement("a");
@@ -672,7 +694,12 @@ async function downloadCrop() {
     link.click();
     link.remove();
     setTimeout(() => URL.revokeObjectURL(link.href), 1000);
-    setStatus("Download ready.");
+
+    let message = `Download ready (${formatBytes(blob.size)}).`;
+    if (targetBytes && blob.size > targetBytes) {
+      message = `Smallest possible at this format is ${formatBytes(blob.size)} (target ${formatBytes(targetBytes)}).`;
+    }
+    setStatus(message);
   } catch (error) {
     console.error(error);
     setError("Full-resolution export failed. Try a smaller image or crop area.");
@@ -1020,12 +1047,14 @@ function clearImage() {
   state.imageBitmap = null;
   state.sourceData = null;
   state.fileName = "";
+  state.fileSize = 0;
   state.corners = [];
   state.defaultCorners = [];
   state.activeCorner = -1;
   state.keyboardCorner = 0;
   state.pendingAutoDetect = false;
   els.fileInput.value = "";
+  els.targetSizeInput.value = "";
   updateMeta();
   setControlsEnabled(false);
   els.emptyState.classList.remove("is-hidden");
@@ -1047,6 +1076,7 @@ function updateMeta() {
   } else {
     els.imageSize.textContent = "-";
   }
+  els.fileSizeMeta.textContent = state.fileSize ? formatBytes(state.fileSize) : "-";
   updateSelectionMeta();
 }
 
@@ -1142,6 +1172,71 @@ function pixelRatio() {
 
 function formatMegaPixels(pixelCount) {
   return Math.round(pixelCount / 1000000);
+}
+
+function formatBytes(bytes) {
+  if (!bytes || bytes < 0) return "0 KB";
+  if (bytes < 1024) return `${bytes} B`;
+  if (bytes < 1024 * 1024) return `${(bytes / 1024).toFixed(1)} KB`;
+  return `${(bytes / (1024 * 1024)).toFixed(2)} MB`;
+}
+
+function scaleCanvas(srcCanvas, factor) {
+  const width = Math.max(1, Math.round(srcCanvas.width * factor));
+  const height = Math.max(1, Math.round(srcCanvas.height * factor));
+  const canvas = document.createElement("canvas");
+  canvas.width = width;
+  canvas.height = height;
+  const ctx = canvas.getContext("2d");
+  ctx.imageSmoothingEnabled = true;
+  ctx.imageSmoothingQuality = "high";
+  ctx.drawImage(srcCanvas, 0, 0, width, height);
+  return canvas;
+}
+
+// Encode the canvas so the output stays within targetBytes (when set).
+// Lossy formats lower quality first to preserve resolution, then downscale
+// if needed; lossless formats (PNG) downscale dimensions.
+async function encodeWithinTarget(srcCanvas, mime, maxQuality, targetBytes) {
+  const lossy = mime === "image/jpeg" || mime === "image/webp";
+  const minQuality = 0.3;
+
+  let blob = await canvasToBlob(srcCanvas, mime, maxQuality);
+  if (!targetBytes || blob.size <= targetBytes) return blob;
+
+  if (lossy) {
+    let lo = minQuality;
+    let hi = maxQuality;
+    let bestUnder = null;
+    for (let i = 0; i < 7; i++) {
+      const mid = (lo + hi) / 2;
+      const candidate = await canvasToBlob(srcCanvas, mime, mid);
+      if (candidate.size <= targetBytes) {
+        bestUnder = candidate;
+        lo = mid;
+      } else {
+        hi = mid;
+      }
+    }
+    if (bestUnder) return bestUnder;
+  }
+
+  const quality = lossy ? minQuality : undefined;
+  let lo = 0.1;
+  let hi = 1;
+  let bestUnder = null;
+  for (let i = 0; i < 7; i++) {
+    const mid = (lo + hi) / 2;
+    const candidate = await canvasToBlob(scaleCanvas(srcCanvas, mid), mime, quality);
+    if (candidate.size <= targetBytes) {
+      bestUnder = candidate;
+      lo = mid;
+    } else {
+      hi = mid;
+    }
+  }
+  if (bestUnder) return bestUnder;
+  return canvasToBlob(scaleCanvas(srcCanvas, lo), mime, quality);
 }
 
 // ---- OpenCV Auto-Detection ----

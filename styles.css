@@ -598,7 +598,8 @@ body.is-resizing * {
 }
 
 
-#qualityInput {
+#qualityInput,
+#targetSizeInput {
   width: 56px;
   border: 1px solid #52525b;
   border-radius: 6px;
@@ -612,17 +613,30 @@ body.is-resizing * {
   text-align: center;
 }
 
-#qualityInput:focus {
+#targetSizeInput {
+  width: 66px;
+}
+
+#targetSizeInput::placeholder {
+  color: var(--subtle);
+  font-weight: 700;
+}
+
+#qualityInput:focus,
+#targetSizeInput:focus {
   border-color: var(--accent);
 }
 
 #qualityInput::-webkit-outer-spin-button,
-#qualityInput::-webkit-inner-spin-button {
+#qualityInput::-webkit-inner-spin-button,
+#targetSizeInput::-webkit-outer-spin-button,
+#targetSizeInput::-webkit-inner-spin-button {
   margin: 0;
   -webkit-appearance: none;
 }
 
-#qualityInput[type="number"] {
+#qualityInput[type="number"],
+#targetSizeInput[type="number"] {
   appearance: textfield;
   -moz-appearance: textfield;
 }

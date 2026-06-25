@@ -133,6 +133,11 @@
             </div>
             <div class="h-7 w-px bg-zinc-700/50"></div>
             <div class="meta-block flex flex-col items-end">
+                <span class="text-[8px] font-bold text-zinc-500 uppercase tracking-widest">File Size</span>
+                <span id="fileSizeMeta" class="text-[10px] font-mono text-zinc-300">-</span>
+            </div>
+            <div class="h-7 w-px bg-zinc-700/50"></div>
+            <div class="meta-block flex flex-col items-end">
                 <span class="text-[8px] font-bold text-zinc-500 uppercase tracking-widest">Export</span>
                 <span id="selectionSize" class="text-[10px] font-mono text-zinc-300">-</span>
             </div>
@@ -232,6 +237,15 @@
                         <div class="relative flex items-center">
                             <input id="qualityInput" type="number" min="65" max="100" value="100" class="bg-zinc-700 border border-zinc-600 text-zinc-100 font-mono font-bold text-[11px] w-14 text-center rounded px-1 py-1 focus:ring-1 focus:ring-blue-500 outline-none">
                             <span class="text-zinc-400 text-[10px] font-bold ml-1">%</span>
+                        </div>
+                    </div>
+
+                    <!-- Target File Size -->
+                    <div class="flex items-center gap-2">
+                        <label id="targetSizeLabel" for="targetSizeInput" class="text-zinc-500 text-[9px] font-black uppercase tracking-wider">Target</label>
+                        <div class="relative flex items-center">
+                            <input id="targetSizeInput" type="number" min="1" placeholder="Auto" class="bg-zinc-700 border border-zinc-600 text-zinc-100 font-mono font-bold text-[11px] w-16 text-center rounded px-1 py-1 focus:ring-1 focus:ring-blue-500 outline-none">
+                            <span class="text-zinc-400 text-[10px] font-bold ml-1">KB</span>
                         </div>
                     </div>
                 </div>
