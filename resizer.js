@@ -335,6 +335,18 @@
     await ensurePdfLibs();
     const buffer = await file.arrayBuffer();
     const pdf = await window.pdfjsLib.getDocument({ data: buffer }).promise;
+    try {
+      return await compressLoadedPdf(pdf, file, targetBytes);
+    } finally {
+      try {
+        pdf.destroy();
+      } catch (_) {
+        /* ignore */
+      }
+    }
+  }
+
+  async function compressLoadedPdf(pdf, file, targetBytes) {
     const pageCount = pdf.numPages;
 
     const renderScales = [2.0, 1.5, 1.2, 1.0, 0.8, 0.6, 0.45, 0.33];

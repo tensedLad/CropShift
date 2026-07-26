@@ -19,7 +19,10 @@ const state = {
   cvReady: false,
   pendingAutoDetect: false,
   cornerMode: localStorage.getItem("cropshift_corner_mode") || "4",
-  rotation: 0
+  rotation: 0,
+  history: [],
+  lastHistoryPush: 0,
+  outputFilter: "none"
 };
 
 function onOpenCvReady() {
@@ -64,6 +67,17 @@ document.addEventListener("DOMContentLoaded", () => {
     drawSource();
     queuePreviewRender();
   });
+  // Re-fit canvases when the pane layout changes (divider drag, sidebar
+  // accordion, responsive breakpoint switches) — not just window resizes.
+  if (window.ResizeObserver) {
+    const observer = new ResizeObserver(() => {
+      resizeCanvases();
+      drawSource();
+      queuePreviewRender();
+    });
+    observer.observe(state.sourceCanvas.parentElement);
+    observer.observe(state.previewCanvas.parentElement);
+  }
 });
 
 function bindElements() {
@@ -81,6 +95,8 @@ function bindElements() {
     "engineStatus",
     "statusMessage",
     "rotateButton",
+    "rotateLeftButton",
+    "autoButton",
     "cornerModeGroup",
     "resetButton",
     "fitButton",
@@ -89,12 +105,14 @@ function bindElements() {
     "previewEmpty",
     "previewInfo",
     "formatGroup",
+    "filterGroup",
     "qualityInput",
     "qualityLabel",
     "targetSizeInput",
     "targetSizeLabel",
     "fileSizeMeta",
-    "downloadButton"
+    "downloadButton",
+    "copyButton"
   ].forEach((id) => {
     els[id] = document.getElementById(id);
   });
@@ -103,19 +121,14 @@ function bindElements() {
   state.selectedFormat = "image/jpeg";
   state.selectedExt = "jpg";
 
-  if (els.cornerModeGroup) {
-    els.cornerModeGroup.querySelectorAll(".mode-btn").forEach((b) => {
-      if (b.dataset.mode === state.cornerMode) {
-        b.classList.remove("bg-zinc-700", "text-zinc-400");
-        b.classList.add("bg-[#1473e6]", "text-white");
-        b.setAttribute("aria-pressed", "true");
-      } else {
-        b.classList.remove("bg-[#1473e6]", "text-white");
-        b.classList.add("bg-zinc-700", "text-zinc-400");
-        b.setAttribute("aria-pressed", "false");
-      }
-    });
-  }
+  syncCornerModeButtons();
+}
+
+function syncCornerModeButtons() {
+  if (!els.cornerModeGroup) return;
+  els.cornerModeGroup.querySelectorAll(".mode-btn").forEach((b) => {
+    b.setAttribute("aria-pressed", b.dataset.mode === state.cornerMode ? "true" : "false");
+  });
 }
 
 function bindEvents() {
@@ -125,12 +138,20 @@ function bindEvents() {
     });
   }
   if (els.rotateButton) {
-    els.rotateButton.addEventListener("click", rotateImageRight);
+    els.rotateButton.addEventListener("click", () => rotateImage(1));
+  }
+  if (els.rotateLeftButton) {
+    els.rotateLeftButton.addEventListener("click", () => rotateImage(-1));
+  }
+  if (els.autoButton) {
+    els.autoButton.addEventListener("click", runAutoDetect);
   }
   els.uploadZone.addEventListener("click", () => els.fileInput.click());
   els.fileInput.addEventListener("change", (event) => {
     const [file] = event.target.files;
     if (file) loadFile(file);
+    // Reset so picking the same file again still fires "change".
+    event.target.value = "";
   });
 
   let dragCounter = 0;
@@ -189,6 +210,7 @@ function bindEvents() {
   });
 
   els.resetButton.addEventListener("click", () => {
+    pushHistory();
     state.pendingAutoDetect = false;
     state.keyboardCorner = 0;
     state.corners = cloneCorners(state.defaultCorners);
@@ -197,6 +219,7 @@ function bindEvents() {
   });
 
   els.fitButton.addEventListener("click", () => {
+    pushHistory();
     state.pendingAutoDetect = false;
     state.keyboardCorner = 0;
     state.corners = imageBoundsCorners();
@@ -211,6 +234,24 @@ function bindEvents() {
     btn.addEventListener("click", () => {
       selectFormatButton(btn);
     });
+  });
+
+  // Output filter toggle buttons
+  if (els.filterGroup) {
+    els.filterGroup.querySelectorAll(".format-btn").forEach((btn) => {
+      btn.addEventListener("click", () => selectFilterButton(btn));
+    });
+  }
+
+  // Undo corner changes with Ctrl/Cmd+Z (outside text inputs).
+  document.addEventListener("keydown", (event) => {
+    if (!scannerIsActive() || !state.imageBitmap) return;
+    const target = event.target;
+    if (target && (target.tagName === "INPUT" || target.tagName === "TEXTAREA" || target.isContentEditable)) return;
+    if ((event.ctrlKey || event.metaKey) && !event.shiftKey && event.key.toLowerCase() === "z") {
+      event.preventDefault();
+      undoCorners();
+    }
   });
 
   els.qualityInput.addEventListener("change", () => {
@@ -232,6 +273,50 @@ function bindEvents() {
   });
 
   els.downloadButton.addEventListener("click", downloadCrop);
+  if (els.copyButton) {
+    els.copyButton.addEventListener("click", copyCrop);
+  }
+}
+
+function pushHistory() {
+  if (!state.corners || !state.corners.length) return;
+  state.history.push({ corners: cloneCorners(state.corners), mode: state.cornerMode });
+  if (state.history.length > 60) state.history.shift();
+}
+
+function undoCorners() {
+  if (!state.history.length || !state.imageBitmap) return;
+  const entry = state.history.pop();
+  if (entry.mode !== state.cornerMode) {
+    state.cornerMode = entry.mode;
+    localStorage.setItem("cropshift_corner_mode", entry.mode);
+    syncCornerModeButtons();
+  }
+  state.corners = entry.corners;
+  if (state.keyboardCorner >= state.corners.length) state.keyboardCorner = 0;
+  state.activeCorner = -1;
+  setStatus("Undid the last corner change.");
+  afterCornerChange();
+}
+
+function runAutoDetect() {
+  if (!state.imageBitmap) return;
+  if (!state.cvReady) {
+    state.pendingAutoDetect = true;
+    setStatus("Auto-detection engine is still loading. It will run once ready.");
+    return;
+  }
+  pushHistory();
+  const detected = autoDetectCorners();
+  if (detected) {
+    state.keyboardCorner = 0;
+    state.activeCorner = -1;
+    setStatus("Document edges auto-detected. Drag a corner handle to refine.");
+    afterCornerChange();
+  } else {
+    state.history.pop();
+    setStatus("No document edges found. Adjust the corners manually.");
+  }
 }
 
 function scannerIsActive() {
@@ -314,6 +399,7 @@ async function loadFile(file) {
     state.fileSize = file.size || 0;
     els.targetSizeInput.value = state.fileSize ? Math.max(1, Math.round(state.fileSize / 1024)) : "";
     state.rotation = 0;
+    state.history = [];
     await buildSourceImageData();
     initializeCorners();
     const detected = autoDetectCorners();
@@ -531,6 +617,7 @@ function onPointerDown(event) {
   const cornerIndex = findCornerAtPoint(point);
   if (cornerIndex === -1) return;
 
+  pushHistory();
   state.pendingAutoDetect = false;
   state.keyboardCorner = cornerIndex;
   state.activeCorner = cornerIndex;
@@ -549,6 +636,9 @@ function onPointerMove(event) {
     return;
   }
 
+  // Ignore secondary pointers while a drag is in progress (multi-touch).
+  if (state.pointerId !== null && event.pointerId !== state.pointerId) return;
+
   const imagePoint = canvasToImage(point);
   const maxX = state.imageBitmap.width - 1;
   const maxY = state.imageBitmap.height - 1;
@@ -562,7 +652,13 @@ function onPointerMove(event) {
 
 function endPointerDrag(event) {
   if (state.pointerId !== null && event.pointerId === state.pointerId) {
-    state.sourceCanvas.releasePointerCapture(event.pointerId);
+    try {
+      state.sourceCanvas.releasePointerCapture(event.pointerId);
+    } catch (_) {
+      /* capture already released */
+    }
+  } else if (state.pointerId !== null) {
+    return;
   }
   state.activeCorner = -1;
   state.pointerId = null;
@@ -598,6 +694,12 @@ function onCanvasKeyDown(event) {
   }
 
   event.preventDefault();
+  // One undo step per burst of key presses (held keys repeat fast).
+  const now = performance.now();
+  if (now - state.lastHistoryPush > 500) {
+    pushHistory();
+    state.lastHistoryPush = now;
+  }
   state.pendingAutoDetect = false;
   const step = event.shiftKey ? 10 : 1;
   const corner = state.corners[state.keyboardCorner];
@@ -614,6 +716,7 @@ function afterCornerChange() {
   drawSource();
   queuePreviewRender();
   els.downloadButton.disabled = !isValidCornerSet(state.corners);
+  if (els.copyButton) els.copyButton.disabled = els.downloadButton.disabled;
 }
 
 function queuePreviewRender() {
@@ -641,6 +744,7 @@ function renderPreview() {
     const width = Math.max(1, Math.round(dims.width * scale));
     const height = Math.max(1, Math.round(dims.height * scale));
     const data = warpPerspective(width, height, scale);
+    applyOutputFilter(data);
     paintPreview(data, width, height);
     els.previewInfo.textContent = `${Math.round(dims.width)} x ${Math.round(dims.height)} px export`;
   } catch (error) {
@@ -677,14 +781,7 @@ async function downloadCrop() {
   setBusy("Rendering full-resolution crop...");
 
   try {
-    const dims = getOutputDimensions(state.corners);
-    const width = Math.max(1, Math.round(dims.width));
-    const height = Math.max(1, Math.round(dims.height));
-    const imageData = warpPerspective(width, height, 1);
-    const canvas = document.createElement("canvas");
-    canvas.width = width;
-    canvas.height = height;
-    canvas.getContext("2d").putImageData(imageData, 0, 0);
+    const canvas = renderFinalCanvas();
 
     const mime = state.selectedFormat;
     const quality = Math.max(0.65, Math.min(1, parseInt(els.qualityInput.value, 10) / 100));
@@ -716,6 +813,134 @@ async function downloadCrop() {
     state.isRenderingFinal = false;
     els.downloadButton.disabled = !isValidCornerSet(state.corners);
   }
+}
+
+// Full-resolution warp + filter, shared by download and copy-to-clipboard.
+function renderFinalCanvas() {
+  const dims = getOutputDimensions(state.corners);
+  const width = Math.max(1, Math.round(dims.width));
+  const height = Math.max(1, Math.round(dims.height));
+  const imageData = warpPerspective(width, height, 1);
+  applyOutputFilter(imageData);
+  const canvas = document.createElement("canvas");
+  canvas.width = width;
+  canvas.height = height;
+  canvas.getContext("2d").putImageData(imageData, 0, 0);
+  return canvas;
+}
+
+async function copyCrop() {
+  if (!state.imageBitmap || !isValidCornerSet(state.corners) || state.isRenderingFinal) return;
+  if (!navigator.clipboard || !window.ClipboardItem) {
+    setError("Copying images to the clipboard isn't supported in this browser.");
+    return;
+  }
+
+  state.isRenderingFinal = true;
+  els.copyButton.disabled = true;
+  setBusy("Rendering crop for the clipboard...");
+
+  try {
+    const canvas = renderFinalCanvas();
+    const blob = await canvasToBlob(canvas, "image/png");
+    await navigator.clipboard.write([new ClipboardItem({ "image/png": blob })]);
+    setStatus(`Copied ${canvas.width} x ${canvas.height} px image to the clipboard.`);
+  } catch (error) {
+    console.error(error);
+    setError("Could not copy the image to the clipboard.");
+  } finally {
+    state.isRenderingFinal = false;
+    els.copyButton.disabled = !isValidCornerSet(state.corners);
+  }
+}
+
+// ---- Output filters (applied to the warped result) ----
+function applyOutputFilter(imageData) {
+  const filter = state.outputFilter;
+  if (!filter || filter === "none") return;
+  const data = imageData.data;
+  const length = data.length;
+
+  if (filter === "gray") {
+    for (let i = 0; i < length; i += 4) {
+      const luma = (data[i] * 299 + data[i + 1] * 587 + data[i + 2] * 114) / 1000;
+      data[i] = data[i + 1] = data[i + 2] = luma;
+    }
+    return;
+  }
+
+  if (filter === "bw") {
+    const threshold = otsuThreshold(data, length);
+    for (let i = 0; i < length; i += 4) {
+      const luma = (data[i] * 299 + data[i + 1] * 587 + data[i + 2] * 114) / 1000;
+      const value = luma >= threshold ? 255 : 0;
+      data[i] = data[i + 1] = data[i + 2] = value;
+    }
+    return;
+  }
+
+  if (filter === "boost") {
+    // Contrast stretch between the 1st and 99th luma percentiles.
+    const histogram = buildLumaHistogram(data, length);
+    const total = length / 4;
+    const clip = total * 0.01;
+    let low = 0;
+    let high = 255;
+    let count = 0;
+    for (let i = 0; i < 256; i += 1) {
+      count += histogram[i];
+      if (count >= clip) { low = i; break; }
+    }
+    count = 0;
+    for (let i = 255; i >= 0; i -= 1) {
+      count += histogram[i];
+      if (count >= clip) { high = i; break; }
+    }
+    if (high - low < 8) return;
+    const gain = 255 / (high - low);
+    for (let i = 0; i < length; i += 4) {
+      data[i] = clamp((data[i] - low) * gain, 0, 255);
+      data[i + 1] = clamp((data[i + 1] - low) * gain, 0, 255);
+      data[i + 2] = clamp((data[i + 2] - low) * gain, 0, 255);
+    }
+  }
+}
+
+function buildLumaHistogram(data, length) {
+  const histogram = new Uint32Array(256);
+  for (let i = 0; i < length; i += 4) {
+    const luma = (data[i] * 299 + data[i + 1] * 587 + data[i + 2] * 114) / 1000;
+    histogram[luma | 0] += 1;
+  }
+  return histogram;
+}
+
+function otsuThreshold(data, length) {
+  const histogram = buildLumaHistogram(data, length);
+  const total = length / 4;
+  let sum = 0;
+  for (let i = 0; i < 256; i += 1) sum += i * histogram[i];
+
+  let sumBackground = 0;
+  let weightBackground = 0;
+  let maxVariance = 0;
+  let threshold = 127;
+
+  for (let i = 0; i < 256; i += 1) {
+    weightBackground += histogram[i];
+    if (weightBackground === 0) continue;
+    const weightForeground = total - weightBackground;
+    if (weightForeground === 0) break;
+    sumBackground += i * histogram[i];
+    const meanBackground = sumBackground / weightBackground;
+    const meanForeground = (sum - sumBackground) / weightForeground;
+    const variance = weightBackground * weightForeground * (meanBackground - meanForeground) ** 2;
+    if (variance > maxVariance) {
+      maxVariance = variance;
+      threshold = i;
+    }
+  }
+  return threshold;
 }
 
 function warpPerspective(width, height, outputScale) {
@@ -1062,6 +1287,8 @@ function clearImage() {
   state.activeCorner = -1;
   state.keyboardCorner = 0;
   state.pendingAutoDetect = false;
+  state.rotation = 0;
+  state.history = [];
   els.fileInput.value = "";
   els.targetSizeInput.value = "";
   updateMeta();
@@ -1080,8 +1307,9 @@ function clearObjectUrl() {
 
 function updateMeta() {
   els.fileName.textContent = state.fileName || "None loaded";
-  if (state.image) {
-    els.imageSize.textContent = `${state.image.naturalWidth} x ${state.image.naturalHeight} px`;
+  if (state.imageBitmap) {
+    // Use the working bitmap so rotation is reflected in the meta readout.
+    els.imageSize.textContent = `${state.imageBitmap.width} x ${state.imageBitmap.height} px`;
   } else {
     els.imageSize.textContent = "-";
   }
@@ -1097,9 +1325,12 @@ function updateSelectionMeta() {
 function setControlsEnabled(enabled) {
   els.resetButton.disabled = !enabled;
   if (els.rotateButton) els.rotateButton.disabled = !enabled;
+  if (els.rotateLeftButton) els.rotateLeftButton.disabled = !enabled;
+  if (els.autoButton) els.autoButton.disabled = !enabled;
   els.fitButton.disabled = !enabled;
   els.clearButton.disabled = !enabled;
   els.downloadButton.disabled = !enabled || !isValidCornerSet(state.corners);
+  if (els.copyButton) els.copyButton.disabled = els.downloadButton.disabled;
 }
 
 function setDownloadQualityVisibility() {
@@ -1119,6 +1350,15 @@ function selectFormatButton(btn) {
   state.selectedFormat = btn.dataset.format;
   state.selectedExt = btn.dataset.ext;
   setDownloadQualityVisibility();
+}
+
+function selectFilterButton(btn) {
+  els.filterGroup.querySelectorAll(".format-btn").forEach((b) => {
+    b.setAttribute("aria-pressed", "false");
+  });
+  btn.setAttribute("aria-pressed", "true");
+  state.outputFilter = btn.dataset.filter;
+  queuePreviewRender();
 }
 
 function autoSelectFormat(fileName) {
@@ -1396,14 +1636,11 @@ function orderQuadPoints(pts) {
 
 function setCornerMode(mode) {
   if (state.cornerMode === mode) return;
+  pushHistory();
   state.cornerMode = mode;
   localStorage.setItem("cropshift_corner_mode", mode);
 
-  if (els.cornerModeGroup) {
-    els.cornerModeGroup.querySelectorAll(".mode-btn").forEach((b) => {
-      b.setAttribute("aria-pressed", b.dataset.mode === mode ? "true" : "false");
-    });
-  }
+  syncCornerModeButtons();
 
   if (state.corners && state.corners.length > 0) {
     if (mode === "8" && state.corners.length === 4) {
@@ -1428,38 +1665,39 @@ function setCornerMode(mode) {
   }
 }
 
-async function rotateImageRight() {
-  if (!state.image) return;
-  state.rotation = (state.rotation + 90) % 360;
-  
+async function rotateImage(direction) {
+  if (!state.image || state.isRenderingFinal) return;
+  const clockwise = direction > 0;
+  state.rotation = (state.rotation + (clockwise ? 90 : 270)) % 360;
+
   const w = state.imageBitmap.width;
   const h = state.imageBitmap.height;
   const cx = w / 2;
   const cy = h / 2;
 
-  const mappedCorners = state.corners.map(p => {
-    const x = p.x - cx;
-    const y = p.y - cy;
-    return {
-      x: -y + cy,
-      y: x + cx
-    };
-  });
-  const shiftAmount = state.corners.length === 8 ? 2 : 1;
-  state.corners = [...mappedCorners.slice(-shiftAmount), ...mappedCorners.slice(0, -shiftAmount)];
+  // CW: (x, y) -> (h - y, x). CCW: (x, y) -> (y, w - x).
+  const mapPoint = clockwise
+    ? (p) => ({ x: 2 * cy - p.y, y: p.x })
+    : (p) => ({ x: p.y, y: 2 * cx - p.x });
 
-  const mappedDefaultCorners = state.defaultCorners.map(p => {
-    const x = p.x - cx;
-    const y = p.y - cy;
-    return { x: -y + cy, y: x + cx };
-  });
-  const defShiftAmount = state.defaultCorners.length === 8 ? 2 : 1;
-  state.defaultCorners = [...mappedDefaultCorners.slice(-defShiftAmount), ...mappedDefaultCorners.slice(0, -defShiftAmount)];
+  // Shift the arrays so index 0 stays the top-left corner after rotation.
+  const rotateCorners = (corners) => {
+    const mapped = corners.map(mapPoint);
+    const shift = corners.length === 8 ? 2 : 1;
+    return clockwise
+      ? [...mapped.slice(-shift), ...mapped.slice(0, -shift)]
+      : [...mapped.slice(shift), ...mapped.slice(0, shift)];
+  };
+
+  state.corners = rotateCorners(state.corners);
+  state.defaultCorners = rotateCorners(state.defaultCorners);
+  // Previous corner history is in the old coordinate frame — drop it.
+  state.history = [];
 
   setBusy("Rotating image...");
   await buildSourceImageData();
   resizeCanvases();
   updateMeta();
-  setStatus("Image rotated.");
+  setStatus(`Image rotated ${clockwise ? "right" : "left"}.`);
   afterCornerChange();
 }

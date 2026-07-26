@@ -4,12 +4,25 @@ A premium, browser-based document scanner that lets you crop, straighten, and ex
 
 ## ✨ Features
 
-- **Smart Corner Detection** – Powered by OpenCV.js, automatically detects document edges on upload.
-- **Manual Precision** – Drag the 4 corner handles with a live magnifying lens for pixel-perfect alignment.
-- **Perspective Warp** – Full homography-based perspective correction renders a perfectly flat document.
+### Document Scanner
+- **Smart Corner Detection** – Powered by OpenCV.js, automatically detects document edges on upload, with an **Auto** button to re-run detection anytime.
+- **Manual Precision** – Drag the corner handles (4 or 8 corner modes) with a live magnifying lens for pixel-perfect alignment. Full keyboard support: `[`/`]` to pick a corner, arrow keys to nudge, `Shift` for 10px steps, `Ctrl/Cmd+Z` to undo.
+- **Perspective Warp** – Full homography-based perspective correction renders a perfectly flat document. 8-corner mode handles curved page edges.
+- **Rotate Both Ways** – Rotate the source image 90° left or right; corners follow automatically.
+- **Output Filters** – None, Grayscale, B&W (automatic Otsu threshold), or Boost (contrast stretch) applied to preview and export.
+- **Export Controls** – JPG / JPEG / PNG / WEBP with adjustable quality (65–100%) and an optional **target file size (KB)** the encoder compresses down to.
+- **Copy or Download** – Save the corrected crop as a file, or copy it straight to the clipboard.
 - **Resizable Split View** – Draggable divider between Source and Preview panes.
-- **Export Controls** – Choose JPG or PNG format with adjustable quality (65–100%).
-- **Zero Server Upload** – Everything runs client-side: your images never leave your browser.
+
+### File Resizer
+- Compress images (JPG, PNG, WEBP…) and PDFs to a target size (KB/MB) — quality is reduced only as much as needed.
+
+### Unlock File
+- Remove the password from PDF (qpdf WASM) and ZIP (zip.js) files you can already open. The password never leaves your browser.
+
+### Everywhere
+- **Zero Server Upload** – Everything runs client-side: your files never leave your browser.
+- **Fully Responsive** – Works on desktop, tablet, and mobile; the layout adapts from a split workspace to stacked panes.
 - **Dark Mode UI** – Premium dark interface with dotted grid canvas background.
 
 ## 🚀 Quick Start
@@ -29,18 +42,24 @@ A premium, browser-based document scanner that lets you crop, straighten, and ex
 
 | Layer       | Technology               |
 |-------------|--------------------------|
-| Layout      | HTML5 + Tailwind CSS CDN |
+| Layout      | HTML5 + hand-written CSS |
 | Logic       | Vanilla JavaScript       |
 | CV Engine   | OpenCV.js 4.9.0          |
+| PDF / ZIP   | pdf.js, pdf-lib, qpdf-wasm, zip.js (lazy-loaded from CDN) |
 | Typography  | Manrope + Inter (Google Fonts) |
 
 ## 📁 Project Structure
 
 ```
 CropShift/
-├── index.html    # Full UI layout
-├── app.js        # Core logic: canvas rendering, warp, detection
-├── styles.css    # Additional styles
+├── index.html    # Document Scanner UI
+├── app.js        # Scanner logic: canvas rendering, warp, detection, filters
+├── resizer.html  # File Resizer UI
+├── resizer.js    # Image/PDF compression to target size
+├── unlock.html   # Unlock File UI
+├── unlock.js     # PDF/ZIP password removal (qpdf WASM + zip.js)
+├── shell.js      # Shared sidebar + nav-height sync
+├── styles.css    # All styles (responsive)
 └── README.md
 ```
 

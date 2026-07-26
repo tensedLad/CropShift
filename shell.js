@@ -121,12 +121,33 @@
     }
   }
 
+  // Keep --nav-h in sync with the real nav height so the fixed sidebar and
+  // main area never overlap when the nav wraps at smaller widths.
+  function syncNavHeight() {
+    const nav = document.querySelector("nav");
+    if (!nav) return;
+    const apply = () => {
+      document.documentElement.style.setProperty("--nav-h", nav.offsetHeight + "px");
+    };
+    apply();
+    if (window.ResizeObserver) {
+      new ResizeObserver(apply).observe(nav);
+    }
+    window.addEventListener("resize", apply);
+    window.addEventListener("load", apply);
+  }
+
+  function start() {
+    build();
+    syncNavHeight();
+  }
+
   // Build immediately when possible so app.js can bind #uploadZone/#fileInput.
   if (document.getElementById("sidebar")) {
-    build();
+    start();
   } else if (document.readyState === "loading") {
-    document.addEventListener("DOMContentLoaded", build);
+    document.addEventListener("DOMContentLoaded", start);
   } else {
-    build();
+    start();
   }
 })();

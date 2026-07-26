@@ -1,5 +1,6 @@
 :root {
   color-scheme: dark;
+  --nav-h: 56px;
   --bg: #0f0f10;
   --surface: #18181b;
   --surface-2: #27272a;
@@ -25,6 +26,7 @@
 html {
   min-height: 100%;
   background: var(--bg);
+  -webkit-text-size-adjust: 100%;
 }
 
 body {
@@ -300,7 +302,7 @@ input:disabled {
 
 aside {
   position: fixed;
-  top: 56px;
+  top: var(--nav-h);
   bottom: 0;
   left: 0;
   z-index: 40;
@@ -372,7 +374,7 @@ aside h3 {
 main {
   height: 100vh;
   margin-left: 260px;
-  padding-top: 56px;
+  padding-top: var(--nav-h);
   background: var(--bg);
   display: flex;
   flex-direction: column;
@@ -584,7 +586,8 @@ body.is-resizing * {
   display: flex;
   align-items: center;
   justify-content: space-between;
-  gap: 16px;
+  flex-wrap: wrap;
+  gap: 12px 16px;
   border-top: 1px solid var(--border);
   background: var(--surface);
   padding: 12px 16px;
@@ -597,6 +600,25 @@ body.is-resizing * {
   gap: 10px;
 }
 
+.export-options {
+  flex-wrap: wrap;
+  gap: 10px 14px;
+  min-width: 0;
+}
+
+.export-actions {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-left: auto;
+}
+
+.export-actions .action-btn {
+  min-height: 38px;
+  border-radius: 8px;
+  padding: 0 16px;
+}
+
 .export-options span,
 #qualityLabel,
 #targetSizeLabel {
@@ -607,7 +629,8 @@ body.is-resizing * {
   text-transform: uppercase;
 }
 
-#formatGroup {
+#formatGroup,
+#filterGroup {
   display: flex;
   background: var(--surface-2);
   padding: 3px;
@@ -730,16 +753,13 @@ body.is-resizing * {
 
   nav > div:last-child {
     width: 100%;
+    flex-wrap: wrap;
     justify-content: space-between;
+    gap: 10px;
   }
 
-  aside {
-    top: 72px;
-  }
-
-  main {
-    padding-top: 72px;
-  }
+  /* aside top / main padding follow --nav-h automatically (set by shell.js),
+     so a taller wrapped nav never overlaps the content. */
 }
 
 @media (max-width: 900px) {
@@ -752,6 +772,7 @@ body.is-resizing * {
 
   nav {
     position: sticky;
+    top: 0;
     min-height: auto;
   }
 
@@ -800,6 +821,22 @@ body.is-resizing * {
     height: auto;
     border-right: 0;
     border-bottom: 1px solid var(--border);
+  }
+
+  /* Compact horizontal tool switcher on small screens; the scanner item
+     (with its upload dropzone) keeps the full row. */
+  aside .tool-list {
+    flex-direction: row;
+    flex-wrap: wrap;
+  }
+
+  aside .tool-item {
+    flex: 1 1 100%;
+  }
+
+  aside .tool-list > a.tool-btn {
+    flex: 1 1 calc(50% - 4px);
+    min-width: 150px;
   }
 
   main {
@@ -1261,11 +1298,10 @@ body.is-resizing * {
     padding: 10px 12px;
   }
 
-  #resetButton,
-  #fitButton,
-  #clearButton {
+  .top-controls .action-btn {
     width: 100%;
     min-width: 0;
+    min-height: 34px;
     flex: 1 1 0;
     justify-content: center;
     padding-inline: 8px;
@@ -1275,6 +1311,15 @@ body.is-resizing * {
     display: grid;
     grid-template-columns: repeat(3, minmax(0, 1fr));
     gap: 8px;
+  }
+
+  #cornerModeGroup {
+    grid-column: 1 / -1;
+  }
+
+  .mode-btn {
+    flex: 1 1 0;
+    min-height: 30px;
   }
 
   .workspace-status {
@@ -1308,11 +1353,31 @@ body.is-resizing * {
     flex-wrap: wrap;
   }
 
-  #formatGroup {
+  #formatGroup,
+  #filterGroup {
     flex: 1 1 100%;
   }
 
   .format-btn {
     flex: 1 1 auto;
+  }
+
+  .export-actions {
+    width: 100%;
+    margin-left: 0;
+  }
+
+  .export-actions .action-btn {
+    flex: 1 1 0;
+    justify-content: center;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    transition-duration: 0.01ms !important;
+    animation-duration: 0.01ms !important;
   }
 }

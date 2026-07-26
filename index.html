@@ -3,62 +3,14 @@
 <head>
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="description" content="Free browser-based document scanner. Crop, straighten, and export documents with perspective correction — files never leave your browser.">
+    <meta name="theme-color" content="#0f0f10">
     <title>CropShift - Document Scanner</title>
     <link rel="icon" type="image/svg+xml" href="logo.svg">
     <link rel="apple-touch-icon" href="logo.svg">
     <link href="https://fonts.googleapis.com/css2?family=Manrope:wght@400;500;600;700;800&family=Inter:wght@400;500;600&display=swap" rel="stylesheet">
     <link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&display=swap" rel="stylesheet">
     <link href="styles.css" rel="stylesheet">
-    <style>
-        .material-symbols-outlined {
-            font-variation-settings: 'FILL' 0, 'wght' 400, 'GRAD' 0, 'opsz' 24;
-        }
-        .split-divider {
-            width: 6px;
-            cursor: col-resize;
-            background: #333;
-            position: relative;
-            z-index: 15;
-            flex-shrink: 0;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            transition: background 0.15s;
-        }
-        .split-divider:hover, .split-divider.is-active {
-            background: #1473e6;
-        }
-        .split-divider .grip {
-            width: 2px;
-            height: 32px;
-            border-left: 1px solid rgba(255,255,255,0.2);
-            border-right: 1px solid rgba(255,255,255,0.2);
-        }
-        .split-divider:hover .grip, .split-divider.is-active .grip {
-            border-color: rgba(255,255,255,0.5);
-        }
-        body.is-resizing * {
-            cursor: col-resize !important;
-            user-select: none !important;
-        }
-        .is-dragging {
-            border-color: #1473e6 !important;
-            background-color: rgba(20, 115, 230, 0.1) !important;
-        }
-        #sourceCanvas {
-            cursor: crosshair;
-            touch-action: none;
-        }
-        #qualityInput::-webkit-outer-spin-button,
-        #qualityInput::-webkit-inner-spin-button {
-            -webkit-appearance: none;
-            margin: 0;
-        }
-        #qualityInput[type=number] {
-            appearance: textfield;
-            -moz-appearance: textfield;
-        }
-    </style>
 </head>
 <body data-tool="scanner">
 
@@ -83,8 +35,14 @@
                 <span id="engineStatus">Ready</span>
                 <p id="statusMessage" role="status" aria-live="polite">Load an image</p>
             </div>
-            <button id="rotateButton" disabled class="action-btn">
-                <span class="material-symbols-outlined">rotate_right</span> Rotate
+            <button id="autoButton" disabled class="action-btn" title="Re-run automatic edge detection">
+                <span class="material-symbols-outlined">auto_fix_high</span> Auto
+            </button>
+            <button id="rotateLeftButton" disabled class="action-btn" title="Rotate left 90&deg;" aria-label="Rotate left">
+                <span class="material-symbols-outlined">rotate_left</span>
+            </button>
+            <button id="rotateButton" disabled class="action-btn" title="Rotate right 90&deg;" aria-label="Rotate right">
+                <span class="material-symbols-outlined">rotate_right</span>
             </button>
             <button id="resetButton" disabled class="action-btn">
                 <span class="material-symbols-outlined">refresh</span> Reset
@@ -175,6 +133,16 @@
                     </div>
 
                     <div class="flex items-center gap-2">
+                        <span>Filter</span>
+                        <div id="filterGroup" role="group" aria-label="Output filter">
+                            <button type="button" data-filter="none" aria-pressed="true" class="format-btn">None</button>
+                            <button type="button" data-filter="gray" aria-pressed="false" class="format-btn">Gray</button>
+                            <button type="button" data-filter="bw" aria-pressed="false" class="format-btn">B&amp;W</button>
+                            <button type="button" data-filter="boost" aria-pressed="false" class="format-btn">Boost</button>
+                        </div>
+                    </div>
+
+                    <div class="flex items-center gap-2">
                         <label id="qualityLabel" for="qualityInput">Quality</label>
                         <div class="relative flex items-center">
                             <input id="qualityInput" type="number" min="65" max="100" value="100">
@@ -191,9 +159,14 @@
                     </div>
                 </div>
 
-                <button id="downloadButton" disabled class="action-btn primary">
-                    <span class="material-symbols-outlined">download</span> Download
-                </button>
+                <div class="export-actions">
+                    <button id="copyButton" disabled class="action-btn" title="Copy the corrected image to the clipboard">
+                        <span class="material-symbols-outlined">content_copy</span> Copy
+                    </button>
+                    <button id="downloadButton" disabled class="action-btn primary">
+                        <span class="material-symbols-outlined">download</span> Download
+                    </button>
+                </div>
             </div>
         </div>
 
