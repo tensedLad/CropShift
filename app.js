@@ -18,12 +18,34 @@ const state = {
   isRenderingFinal: false,
   cvReady: false,
   pendingAutoDetect: false,
-  cornerMode: localStorage.getItem("cropshift_corner_mode") || "4",
+  cornerMode: storageGet("cropshift_corner_mode") === "8" ? "8" : "4",
   rotation: 0,
   history: [],
   lastHistoryPush: 0,
-  outputFilter: "none"
+  outputFilter: "none",
+  isRotating: false,
+  formatPicked: false,
+  scanPages: [],
+  scanPagesSaved: false,
+  scanPdfName: ""
 };
+
+// localStorage can throw (private mode, blocked storage); never let that break the app.
+function storageGet(key) {
+  try {
+    return localStorage.getItem(key);
+  } catch (_) {
+    return null;
+  }
+}
+
+function storageSet(key, value) {
+  try {
+    localStorage.setItem(key, value);
+  } catch (_) {
+    /* storage unavailable */
+  }
+}
 
 function onOpenCvReady() {
   state.cvReady = true;
@@ -112,7 +134,12 @@ function bindElements() {
     "targetSizeLabel",
     "fileSizeMeta",
     "downloadButton",
-    "copyButton"
+    "copyButton",
+    "addPageButton",
+    "scanPagesGroup",
+    "savePagesButton",
+    "savePagesLabel",
+    "clearPagesButton"
   ].forEach((id) => {
     els[id] = document.getElementById(id);
   });
@@ -232,6 +259,7 @@ function bindEvents() {
   // Format toggle buttons
   els.formatGroup.querySelectorAll(".format-btn").forEach((btn) => {
     btn.addEventListener("click", () => {
+      state.formatPicked = true;
       selectFormatButton(btn);
     });
   });
@@ -276,6 +304,17 @@ function bindEvents() {
   if (els.copyButton) {
     els.copyButton.addEventListener("click", copyCrop);
   }
+  if (els.addPageButton) {
+    els.addPageButton.addEventListener("click", addScanPage);
+    els.savePagesButton.addEventListener("click", saveScanPages);
+    els.clearPagesButton.addEventListener("click", clearScanPages);
+  }
+  window.addEventListener("beforeunload", (event) => {
+    if (state.scanPages.length && !state.scanPagesSaved) {
+      event.preventDefault();
+      event.returnValue = "";
+    }
+  });
 }
 
 function pushHistory() {
@@ -289,7 +328,7 @@ function undoCorners() {
   const entry = state.history.pop();
   if (entry.mode !== state.cornerMode) {
     state.cornerMode = entry.mode;
-    localStorage.setItem("cropshift_corner_mode", entry.mode);
+    storageSet("cropshift_corner_mode", entry.mode);
     syncCornerModeButtons();
   }
   state.corners = entry.corners;
@@ -364,7 +403,8 @@ function clipboardExtension(type) {
 }
 
 async function loadFile(file) {
-  if (!file.type.startsWith("image/")) {
+  const looksLikeImage = /^image\//.test(file.type) || /\.(jpe?g|png|webp|gif|bmp|avif)$/i.test(file.name || "");
+  if (!looksLikeImage) {
     setError("Choose an image file.");
     return;
   }
@@ -717,6 +757,7 @@ function afterCornerChange() {
   queuePreviewRender();
   els.downloadButton.disabled = !isValidCornerSet(state.corners);
   if (els.copyButton) els.copyButton.disabled = els.downloadButton.disabled;
+  if (els.addPageButton) els.addPageButton.disabled = els.downloadButton.disabled;
 }
 
 function queuePreviewRender() {
@@ -789,7 +830,15 @@ async function downloadCrop() {
     const targetKb = parseInt(els.targetSizeInput.value, 10);
     const targetBytes = !isNaN(targetKb) && targetKb >= 1 ? targetKb * 1024 : 0;
     if (targetBytes) setBusy("Compressing to target size...");
-    const blob = await encodeWithinTarget(canvas, mime, quality, targetBytes);
+    let blob;
+    if (mime === "application/pdf") {
+      // JPEG page inside a PDF; leave ~2 KB for the PDF wrapper when a target is set.
+      const page = await scanPageJpeg(canvas, quality, targetBytes ? Math.max(1024, targetBytes - 2048) : 0);
+      setBusy("Building PDF...");
+      blob = await buildScanPdf([page]);
+    } else {
+      blob = await encodeWithinTarget(canvas, mime, quality, targetBytes);
+    }
 
     const extension = state.selectedExt;
     const baseName = state.fileName ? state.fileName.replace(/\.[^/.]+$/, "") : "output";
@@ -1331,10 +1380,14 @@ function setControlsEnabled(enabled) {
   els.clearButton.disabled = !enabled;
   els.downloadButton.disabled = !enabled || !isValidCornerSet(state.corners);
   if (els.copyButton) els.copyButton.disabled = els.downloadButton.disabled;
+  if (els.addPageButton) els.addPageButton.disabled = els.downloadButton.disabled;
 }
 
 function setDownloadQualityVisibility() {
-  const supportsQuality = state.selectedFormat === "image/jpeg" || state.selectedFormat === "image/webp";
+  const supportsQuality =
+    state.selectedFormat === "image/jpeg" ||
+    state.selectedFormat === "image/webp" ||
+    state.selectedFormat === "application/pdf";
   els.qualityInput.disabled = !supportsQuality;
   els.qualityLabel.style.opacity = supportsQuality ? "1" : "0.45";
   els.qualityInput.style.opacity = supportsQuality ? "1" : "0.45";
@@ -1362,6 +1415,8 @@ function selectFilterButton(btn) {
 }
 
 function autoSelectFormat(fileName) {
+  // Keep a format the user picked on purpose (e.g. PDF) across images.
+  if (state.formatPicked) return;
   const ext = fileName.split(".").pop().toLowerCase();
   const map = { jpg: "jpg", jpeg: "jpeg", png: "png", webp: "webp" };
   const targetExt = map[ext] || "jpg";
@@ -1638,7 +1693,7 @@ function setCornerMode(mode) {
   if (state.cornerMode === mode) return;
   pushHistory();
   state.cornerMode = mode;
-  localStorage.setItem("cropshift_corner_mode", mode);
+  storageSet("cropshift_corner_mode", mode);
 
   syncCornerModeButtons();
 
@@ -1666,7 +1721,18 @@ function setCornerMode(mode) {
 }
 
 async function rotateImage(direction) {
-  if (!state.image || state.isRenderingFinal) return;
+  // Ignore clicks while a rotation is still rebuilding the bitmap; a second
+  // rotation would map the corners with the old image dimensions.
+  if (!state.image || state.isRenderingFinal || state.isRotating) return;
+  state.isRotating = true;
+  try {
+    await rotateImageNow(direction);
+  } finally {
+    state.isRotating = false;
+  }
+}
+
+async function rotateImageNow(direction) {
   const clockwise = direction > 0;
   state.rotation = (state.rotation + (clockwise ? 90 : 270)) % 360;
 
@@ -1700,4 +1766,93 @@ async function rotateImage(direction) {
   updateMeta();
   setStatus(`Image rotated ${clockwise ? "right" : "left"}.`);
   afterCornerChange();
+}
+
+// ---- PDF export & multi-page scanning ----
+const SCAN_PDF_MAX_SIDE = 2480; // ~300 DPI on an A4 page
+const SCAN_PDF_LONG_SIDE_PT = 842; // A4 long side in points
+
+async function scanPageJpeg(canvas, quality, targetBytes) {
+  const long = Math.max(canvas.width, canvas.height);
+  const source = long > SCAN_PDF_MAX_SIDE ? scaleCanvas(canvas, SCAN_PDF_MAX_SIDE / long) : canvas;
+  const jpeg = await encodeWithinTarget(source, "image/jpeg", Math.min(quality, 0.92), targetBytes || 0);
+  return {
+    bytes: new Uint8Array(await jpeg.arrayBuffer()),
+    width: source.width,
+    height: source.height
+  };
+}
+
+async function buildScanPdf(pages) {
+  const PDFLib = await window.CS.ensurePdfLib();
+  const doc = await PDFLib.PDFDocument.create();
+  for (const pg of pages) {
+    const image = await doc.embedJpg(pg.bytes);
+    // Size pages like paper: the long side matches A4 (297 mm).
+    const k = SCAN_PDF_LONG_SIDE_PT / Math.max(pg.width, pg.height);
+    const w = pg.width * k;
+    const h = pg.height * k;
+    const page = doc.addPage([w, h]);
+    page.drawImage(image, { x: 0, y: 0, width: w, height: h });
+  }
+  doc.setCreator("CropShift");
+  doc.setProducer("CropShift (pdf-lib)");
+  return new Blob([await doc.save()], { type: "application/pdf" });
+}
+
+async function addScanPage() {
+  if (!state.imageBitmap || !isValidCornerSet(state.corners) || state.isRenderingFinal) return;
+  state.isRenderingFinal = true;
+  els.addPageButton.disabled = true;
+  setBusy("Adding page...");
+  try {
+    const canvas = renderFinalCanvas();
+    const quality = Math.max(0.65, Math.min(1, parseInt(els.qualityInput.value, 10) / 100 || 1));
+    state.scanPages.push(await scanPageJpeg(canvas, quality, 0));
+    state.scanPagesSaved = false;
+    if (!state.scanPdfName && state.fileName) state.scanPdfName = state.fileName.replace(/\.[^/.]+$/, "");
+    updateScanPages();
+    setStatus(`Page ${state.scanPages.length} added. Load the next image, or save the PDF.`);
+  } catch (error) {
+    console.error(error);
+    setError("Could not add this page. Try a smaller crop.");
+  } finally {
+    state.isRenderingFinal = false;
+    els.addPageButton.disabled = !state.imageBitmap || !isValidCornerSet(state.corners);
+  }
+}
+
+async function saveScanPages() {
+  if (!state.scanPages.length) return;
+  els.savePagesButton.disabled = true;
+  setBusy(`Building ${state.scanPages.length}-page PDF...`);
+  try {
+    const blob = await buildScanPdf(state.scanPages);
+    const name = `${state.scanPdfName || "scan"}-scan.pdf`;
+    window.CS.downloadBlob(blob, name);
+    state.scanPagesSaved = true;
+    const count = state.scanPages.length;
+    setStatus(`Saved ${name} (${count} page${count === 1 ? "" : "s"}, ${formatBytes(blob.size)}).`);
+  } catch (error) {
+    console.error(error);
+    setError(error && error.message ? error.message : "Could not build the PDF.");
+  } finally {
+    els.savePagesButton.disabled = false;
+  }
+}
+
+function clearScanPages() {
+  if (!state.scanPages.length) return;
+  if (!state.scanPagesSaved && !window.confirm(`Discard ${state.scanPages.length} collected page(s)?`)) return;
+  state.scanPages = [];
+  state.scanPdfName = "";
+  state.scanPagesSaved = false;
+  updateScanPages();
+  setStatus("Collected pages discarded.");
+}
+
+function updateScanPages() {
+  const n = state.scanPages.length;
+  els.scanPagesGroup.classList.toggle("is-hidden", n === 0);
+  els.savePagesLabel.textContent = `PDF (${n})`;
 }

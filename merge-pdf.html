@@ -1,0 +1,95 @@
+<!DOCTYPE html>
+<html class="dark" lang="en">
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="description" content="Free PDF merger and page organizer. Combine PDFs and images, reorder, rotate and delete pages — files never leave your browser.">
+    <meta name="theme-color" content="#0f0f10">
+    <title>CropShift - Merge &amp; Organize PDF</title>
+    <link rel="icon" type="image/svg+xml" href="logo.svg">
+    <link rel="apple-touch-icon" href="logo.svg">
+    <link href="https://fonts.googleapis.com/css2?family=Manrope:wght@400;500;600;700;800&family=Inter:wght@400;500;600&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&display=swap" rel="stylesheet">
+    <link href="styles.css" rel="stylesheet">
+</head>
+<body data-tool="merge-pdf">
+
+<nav>
+    <div>
+        <a class="brand-logo" href="./" aria-label="CropShift home">
+            <img src="logo.svg" alt="" aria-hidden="true">
+            <span>CropShift</span>
+        </a>
+        <div class="h-5"></div>
+        <span>Merge &amp; Organize</span>
+    </div>
+</nav>
+
+<aside id="sidebar" class="pro-scrollbar"></aside>
+
+<main>
+  <div class="tool-screen">
+    <div class="pane-header">
+        <span class="pane-title">Merge &amp; Organize PDF</span>
+        <span id="mgStatus" class="pane-badge" role="status" aria-live="polite">Ready</span>
+    </div>
+
+    <div id="mgScroller" class="tool-pane pro-scrollbar">
+      <div class="resizer-panel is-wide">
+
+        <input id="mgInput" type="file" accept="application/pdf,.pdf,image/*" multiple class="hidden" aria-label="Add PDFs or images">
+
+        <button id="mgDropzone" type="button" class="resizer-dropzone">
+            <span class="material-symbols-outlined" aria-hidden="true">merge</span>
+            <strong>Drop, paste, or click to add PDFs</strong>
+            <span class="resizer-dropzone-sub">Add several PDFs (and images) &middot; then reorder, rotate or delete pages and save one PDF</span>
+        </button>
+
+        <div id="mgWorkspace" class="resizer-workspace is-hidden">
+
+            <div class="resizer-card">
+                <div class="card-head">
+                    <div>
+                        <h2 class="card-title">Pages <span id="mgCount" class="card-sub"></span></h2>
+                        <span class="card-sub">Drag pages to reorder. Click to select, then rotate or delete in bulk.</span>
+                    </div>
+                    <div class="toolbar-row">
+                        <button id="mgAddBtn" type="button" class="action-btn"><span class="material-symbols-outlined" aria-hidden="true">add</span> Add files</button>
+                        <button id="mgRotateSelBtn" type="button" class="action-btn" disabled><span class="material-symbols-outlined" aria-hidden="true">rotate_right</span> Rotate selected</button>
+                        <button id="mgDeleteSelBtn" type="button" class="action-btn" disabled><span class="material-symbols-outlined" aria-hidden="true">delete</span> Delete selected</button>
+                        <button id="mgReverseBtn" type="button" class="action-btn"><span class="material-symbols-outlined" aria-hidden="true">swap_vert</span> Reverse</button>
+                        <button id="mgClearBtn" type="button" class="action-btn"><span class="material-symbols-outlined" aria-hidden="true">restart_alt</span> Clear</button>
+                    </div>
+                </div>
+                <div id="mgFiles" class="toolbar-row" style="margin-bottom:12px"></div>
+                <div id="mgGrid" class="page-grid"></div>
+            </div>
+
+            <div class="resizer-card resizer-controls">
+                <div class="field-grid">
+                    <div class="field">
+                        <label class="resizer-label" for="mgName">File name</label>
+                        <input id="mgName" type="text" class="text-input" value="merged" spellcheck="false" autocomplete="off">
+                    </div>
+                </div>
+                <button id="mgRunBtn" type="button" class="action-btn primary resizer-run" disabled>
+                    <span class="material-symbols-outlined" aria-hidden="true">download</span> Save &amp; download PDF
+                </button>
+                <p class="resizer-hint">Text, links and quality are kept as-is: pages are copied, not re-rendered.</p>
+            </div>
+
+        </div>
+      </div>
+    </div>
+  </div>
+</main>
+
+<script src="shell.js"></script>
+<script src="common.js"></script>
+<script src="merge-pdf.js"></script>
+<script>
+    window.va = window.va || function () { (window.vaq = window.vaq || []).push(arguments); };
+</script>
+<script defer src="/_vercel/insights/script.js"></script>
+</body>
+</html>

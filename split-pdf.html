@@ -1,0 +1,131 @@
+<!DOCTYPE html>
+<html class="dark" lang="en">
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="description" content="Free PDF splitter. Extract pages, split by page ranges or every N pages — files never leave your browser.">
+    <meta name="theme-color" content="#0f0f10">
+    <title>CropShift - Split PDF</title>
+    <link rel="icon" type="image/svg+xml" href="logo.svg">
+    <link rel="apple-touch-icon" href="logo.svg">
+    <link href="https://fonts.googleapis.com/css2?family=Manrope:wght@400;500;600;700;800&family=Inter:wght@400;500;600&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&display=swap" rel="stylesheet">
+    <link href="styles.css" rel="stylesheet">
+</head>
+<body data-tool="split-pdf">
+
+<nav>
+    <div>
+        <a class="brand-logo" href="./" aria-label="CropShift home">
+            <img src="logo.svg" alt="" aria-hidden="true">
+            <span>CropShift</span>
+        </a>
+        <div class="h-5"></div>
+        <span>Split PDF</span>
+    </div>
+</nav>
+
+<aside id="sidebar" class="pro-scrollbar"></aside>
+
+<main>
+  <div class="tool-screen">
+    <div class="pane-header">
+        <span class="pane-title">Split PDF</span>
+        <span id="spStatus" class="pane-badge" role="status" aria-live="polite">Ready</span>
+    </div>
+
+    <div id="spScroller" class="tool-pane pro-scrollbar">
+      <div class="resizer-panel is-wide">
+
+        <input id="spInput" type="file" accept="application/pdf,.pdf" class="hidden" aria-label="Upload a PDF">
+
+        <button id="spDropzone" type="button" class="resizer-dropzone">
+            <span class="material-symbols-outlined" aria-hidden="true">call_split</span>
+            <strong>Drop, paste, or click to upload a PDF</strong>
+            <span class="resizer-dropzone-sub">Pull out the pages you need, or cut it into several smaller PDFs</span>
+        </button>
+
+        <div id="spWorkspace" class="resizer-workspace is-hidden">
+
+            <div class="resizer-card">
+                <div class="resizer-file-row">
+                    <span class="material-symbols-outlined resizer-file-icon" aria-hidden="true">picture_as_pdf</span>
+                    <div class="resizer-file-meta">
+                        <span id="spFileName" class="resizer-file-name">file.pdf</span>
+                        <span id="spFileInfo" class="resizer-file-info">&mdash;</span>
+                    </div>
+                    <button id="spChangeBtn" type="button" class="action-btn">
+                        <span class="material-symbols-outlined" aria-hidden="true">swap_horiz</span> Change
+                    </button>
+                </div>
+            </div>
+
+            <div class="resizer-card resizer-controls">
+                <div class="field">
+                    <span class="resizer-label" id="spModeLabel">Mode</span>
+                    <div id="spMode" class="seg-group" role="group" aria-labelledby="spModeLabel">
+                        <button type="button" class="format-btn" data-value="extract" aria-pressed="true">Extract pages</button>
+                        <button type="button" class="format-btn" data-value="ranges" aria-pressed="false">Split by ranges</button>
+                        <button type="button" class="format-btn" data-value="every" aria-pressed="false">Every N pages</button>
+                    </div>
+                </div>
+
+                <div id="spPanelExtract" class="mode-panel">
+                    <div class="field">
+                        <label class="resizer-label" for="spPages">Pages to extract</label>
+                        <input id="spPages" type="text" class="text-input" placeholder="e.g. 1-3, 5, 8-" spellcheck="false" autocomplete="off">
+                    </div>
+                    <label class="check-row"><input id="spSeparate" type="checkbox"> Save every extracted page as its own PDF (ZIP)</label>
+                </div>
+
+                <div id="spPanelRanges" class="mode-panel is-hidden">
+                    <div class="field">
+                        <label class="resizer-label" for="spRanges">Ranges (one PDF per range)</label>
+                        <input id="spRanges" type="text" class="text-input" placeholder="e.g. 1-4, 5-9, 10-" spellcheck="false" autocomplete="off">
+                    </div>
+                </div>
+
+                <div id="spPanelEvery" class="mode-panel is-hidden">
+                    <div class="field-inline">
+                        <label class="resizer-label" for="spEvery">Pages per file</label>
+                        <input id="spEvery" type="number" min="1" value="1" class="resizer-number" style="width:90px">
+                    </div>
+                </div>
+
+                <p id="spSummary" class="resizer-hint"></p>
+                <p id="spError" class="field-error is-hidden" role="alert"></p>
+
+                <button id="spRunBtn" type="button" class="action-btn primary resizer-run" disabled>
+                    <span class="material-symbols-outlined" aria-hidden="true">download</span> <span id="spRunLabel">Split &amp; download</span>
+                </button>
+            </div>
+
+            <div class="resizer-card">
+                <div class="card-head">
+                    <div>
+                        <h2 class="card-title">Pages</h2>
+                        <span id="spGridHint" class="card-sub">Click pages to add or remove them from the extraction.</span>
+                    </div>
+                    <div class="toolbar-row" id="spSelTools">
+                        <button id="spAllBtn" type="button" class="action-btn"><span class="material-symbols-outlined" aria-hidden="true">select_all</span> All</button>
+                        <button id="spNoneBtn" type="button" class="action-btn"><span class="material-symbols-outlined" aria-hidden="true">deselect</span> None</button>
+                    </div>
+                </div>
+                <div id="spGrid" class="page-grid"></div>
+            </div>
+
+        </div>
+      </div>
+    </div>
+  </div>
+</main>
+
+<script src="shell.js"></script>
+<script src="common.js"></script>
+<script src="split-pdf.js"></script>
+<script>
+    window.va = window.va || function () { (window.vaq = window.vaq || []).push(arguments); };
+</script>
+<script defer src="/_vercel/insights/script.js"></script>
+</body>
+</html>

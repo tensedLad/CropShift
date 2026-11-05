@@ -1,0 +1,166 @@
+<!DOCTYPE html>
+<html class="dark" lang="en">
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="description" content="Add page numbers, a header/footer or a watermark to any PDF for free — files never leave your browser.">
+    <meta name="theme-color" content="#0f0f10">
+    <title>CropShift - Page Numbers &amp; Watermark</title>
+    <link rel="icon" type="image/svg+xml" href="logo.svg">
+    <link rel="apple-touch-icon" href="logo.svg">
+    <link href="https://fonts.googleapis.com/css2?family=Manrope:wght@400;500;600;700;800&family=Inter:wght@400;500;600&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&display=swap" rel="stylesheet">
+    <link href="styles.css" rel="stylesheet">
+</head>
+<body data-tool="page-numbers">
+
+<nav>
+    <div>
+        <a class="brand-logo" href="./" aria-label="CropShift home">
+            <img src="logo.svg" alt="" aria-hidden="true">
+            <span>CropShift</span>
+        </a>
+        <div class="h-5"></div>
+        <span>Page Numbers &amp; Watermark</span>
+    </div>
+</nav>
+
+<aside id="sidebar" class="pro-scrollbar"></aside>
+
+<main>
+  <div class="tool-screen">
+    <div class="pane-header">
+        <span class="pane-title">Page Numbers &amp; Watermark</span>
+        <span id="pnStatus" class="pane-badge" role="status" aria-live="polite">Ready</span>
+    </div>
+
+    <div class="tool-pane pro-scrollbar">
+      <div class="resizer-panel is-wide">
+
+        <input id="pnInput" type="file" accept="application/pdf,.pdf" class="hidden" aria-label="Upload a PDF">
+
+        <button id="pnDropzone" type="button" class="resizer-dropzone">
+            <span class="material-symbols-outlined" aria-hidden="true">format_list_numbered</span>
+            <strong>Drop, paste, or click to upload a PDF</strong>
+            <span class="resizer-dropzone-sub">Number your assignment pages, add a footer, or stamp a watermark</span>
+        </button>
+
+        <div id="pnWorkspace" class="resizer-workspace is-hidden">
+
+            <div class="resizer-card">
+                <div class="resizer-file-row">
+                    <span class="material-symbols-outlined resizer-file-icon" aria-hidden="true">picture_as_pdf</span>
+                    <div class="resizer-file-meta">
+                        <span id="pnFileName" class="resizer-file-name">file.pdf</span>
+                        <span id="pnFileInfo" class="resizer-file-info">&mdash;</span>
+                    </div>
+                    <button id="pnChangeBtn" type="button" class="action-btn">
+                        <span class="material-symbols-outlined" aria-hidden="true">swap_horiz</span> Change
+                    </button>
+                </div>
+            </div>
+
+            <div class="split-row">
+                <div class="resizer-card resizer-controls">
+                    <label class="check-row"><input id="pnNumOn" type="checkbox" checked> <strong>Page numbers</strong></label>
+                    <div id="pnNumFields" class="field-grid">
+                        <div class="field">
+                            <label class="resizer-label" for="pnPosition">Position</label>
+                            <select id="pnPosition" class="select-input">
+                                <option value="bc" selected>Bottom center</option>
+                                <option value="br">Bottom right</option>
+                                <option value="bl">Bottom left</option>
+                                <option value="tc">Top center</option>
+                                <option value="tr">Top right</option>
+                                <option value="tl">Top left</option>
+                            </select>
+                        </div>
+                        <div class="field">
+                            <label class="resizer-label" for="pnFormat">Format</label>
+                            <select id="pnFormat" class="select-input">
+                                <option value="{n}" selected>1</option>
+                                <option value="Page {n}">Page 1</option>
+                                <option value="Page {n} of {total}">Page 1 of 9</option>
+                                <option value="{n} / {total}">1 / 9</option>
+                                <option value="- {n} -">- 1 -</option>
+                            </select>
+                        </div>
+                        <div class="field">
+                            <label class="resizer-label" for="pnStart">Start at</label>
+                            <input id="pnStart" type="number" min="0" value="1" class="text-input">
+                        </div>
+                        <div class="field">
+                            <label class="resizer-label" for="pnSize">Font size</label>
+                            <input id="pnSize" type="number" min="6" max="48" value="11" class="text-input">
+                        </div>
+                        <div class="field">
+                            <label class="resizer-label" for="pnFrom">Number from page</label>
+                            <input id="pnFrom" type="number" min="1" value="1" class="text-input">
+                        </div>
+                        <div class="field">
+                            <label class="resizer-label" for="pnText">Footer text (optional)</label>
+                            <input id="pnText" type="text" class="text-input" placeholder="e.g. Roll No. 21 · Physics" spellcheck="false">
+                        </div>
+                    </div>
+
+                    <hr class="divider">
+
+                    <label class="check-row"><input id="pnWmOn" type="checkbox"> <strong>Watermark</strong></label>
+                    <div id="pnWmFields" class="field-grid">
+                        <div class="field">
+                            <label class="resizer-label" for="pnWmText">Text</label>
+                            <input id="pnWmText" type="text" class="text-input" value="CONFIDENTIAL" spellcheck="false">
+                        </div>
+                        <div class="field">
+                            <label class="resizer-label" for="pnWmColor">Color</label>
+                            <input id="pnWmColor" type="color" class="color-input" value="#e11d48">
+                        </div>
+                        <div class="field">
+                            <label class="resizer-label" for="pnWmOpacity">Opacity <span id="pnWmOpacityVal">20%</span></label>
+                            <input id="pnWmOpacity" type="range" min="5" max="80" value="20" class="range-input">
+                        </div>
+                        <div class="field">
+                            <label class="resizer-label" for="pnWmSize">Size <span id="pnWmSizeVal">60</span></label>
+                            <input id="pnWmSize" type="range" min="16" max="140" value="60" class="range-input">
+                        </div>
+                        <div class="field">
+                            <span class="resizer-label" id="pnWmAngleLabel">Angle</span>
+                            <div id="pnWmAngle" class="seg-group" role="group" aria-labelledby="pnWmAngleLabel">
+                                <button type="button" class="format-btn" data-value="45" aria-pressed="true">Diagonal</button>
+                                <button type="button" class="format-btn" data-value="0" aria-pressed="false">Flat</button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="resizer-card resizer-controls">
+                    <div class="card-head" style="margin-bottom:0">
+                        <h2 class="card-title">Preview</h2>
+                        <div class="toolbar-row">
+                            <button id="pnPrevBtn" type="button" class="icon-btn" aria-label="Previous page"><span class="material-symbols-outlined" aria-hidden="true">chevron_left</span></button>
+                            <span id="pnPageLabel" class="card-sub">Page 1</span>
+                            <button id="pnNextBtn" type="button" class="icon-btn" aria-label="Next page"><span class="material-symbols-outlined" aria-hidden="true">chevron_right</span></button>
+                        </div>
+                    </div>
+                    <div class="preview-frame"><canvas id="pnPreview" aria-label="Preview of the stamped page"></canvas></div>
+                    <button id="pnRunBtn" type="button" class="action-btn primary resizer-run" disabled>
+                        <span class="material-symbols-outlined" aria-hidden="true">download</span> Apply &amp; download PDF
+                    </button>
+                </div>
+            </div>
+
+        </div>
+      </div>
+    </div>
+  </div>
+</main>
+
+<script src="shell.js"></script>
+<script src="common.js"></script>
+<script src="page-numbers.js"></script>
+<script>
+    window.va = window.va || function () { (window.vaq = window.vaq || []).push(arguments); };
+</script>
+<script defer src="/_vercel/insights/script.js"></script>
+</body>
+</html>

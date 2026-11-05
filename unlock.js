@@ -162,13 +162,15 @@
   }
 
   function refreshRunState() {
-    el.unlockRunBtn.disabled = !(U.file && el.unlockPassword.value.length > 0);
+    // PDFs that only restrict printing/copying open without a password, so an
+    // empty password is allowed for them (qpdf still strips the restrictions).
+    el.unlockRunBtn.disabled = !(U.file && (U.kind === "pdf" || el.unlockPassword.value.length > 0));
   }
 
   async function runUnlock() {
     if (!U.file) return;
     const password = el.unlockPassword.value;
-    if (!password) return;
+    if (!password && U.kind !== "pdf") return;
 
     el.unlockRunBtn.disabled = true;
     el.unlockDownloadBtn.disabled = true;

@@ -1,0 +1,125 @@
+<!DOCTYPE html>
+<html class="dark" lang="en">
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="description" content="Free PDF to image converter. Turn PDF pages into JPG, PNG or WEBP at the resolution you need — files never leave your browser.">
+    <meta name="theme-color" content="#0f0f10">
+    <title>CropShift - PDF to Image</title>
+    <link rel="icon" type="image/svg+xml" href="logo.svg">
+    <link rel="apple-touch-icon" href="logo.svg">
+    <link href="https://fonts.googleapis.com/css2?family=Manrope:wght@400;500;600;700;800&family=Inter:wght@400;500;600&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&display=swap" rel="stylesheet">
+    <link href="styles.css" rel="stylesheet">
+</head>
+<body data-tool="pdf-to-image">
+
+<nav>
+    <div>
+        <a class="brand-logo" href="./" aria-label="CropShift home">
+            <img src="logo.svg" alt="" aria-hidden="true">
+            <span>CropShift</span>
+        </a>
+        <div class="h-5"></div>
+        <span>PDF to Image</span>
+    </div>
+</nav>
+
+<aside id="sidebar" class="pro-scrollbar"></aside>
+
+<main>
+  <div class="tool-screen">
+    <div class="pane-header">
+        <span class="pane-title">PDF to Image</span>
+        <span id="p2iStatus" class="pane-badge" role="status" aria-live="polite">Ready</span>
+    </div>
+
+    <div id="p2iScroller" class="tool-pane pro-scrollbar">
+      <div class="resizer-panel is-wide">
+
+        <input id="p2iInput" type="file" accept="application/pdf,.pdf" class="hidden" aria-label="Upload a PDF">
+
+        <button id="p2iDropzone" type="button" class="resizer-dropzone">
+            <span class="material-symbols-outlined" aria-hidden="true">photo_library</span>
+            <strong>Drop, paste, or click to upload a PDF</strong>
+            <span class="resizer-dropzone-sub">Every page becomes a JPG, PNG or WEBP image</span>
+        </button>
+
+        <div id="p2iWorkspace" class="resizer-workspace is-hidden">
+
+            <div class="resizer-card">
+                <div class="resizer-file-row">
+                    <span class="material-symbols-outlined resizer-file-icon" aria-hidden="true">picture_as_pdf</span>
+                    <div class="resizer-file-meta">
+                        <span id="p2iFileName" class="resizer-file-name">file.pdf</span>
+                        <span id="p2iFileInfo" class="resizer-file-info">&mdash;</span>
+                    </div>
+                    <button id="p2iChangeBtn" type="button" class="action-btn">
+                        <span class="material-symbols-outlined" aria-hidden="true">swap_horiz</span> Change
+                    </button>
+                </div>
+            </div>
+
+            <div class="resizer-card resizer-controls">
+                <div class="field-grid">
+                    <div class="field">
+                        <span class="resizer-label" id="p2iFormatLabel">Format</span>
+                        <div id="p2iFormat" class="seg-group" role="group" aria-labelledby="p2iFormatLabel">
+                            <button type="button" class="format-btn" data-value="jpg" aria-pressed="true">JPG</button>
+                            <button type="button" class="format-btn" data-value="png" aria-pressed="false">PNG</button>
+                            <button type="button" class="format-btn" data-value="webp" aria-pressed="false">WEBP</button>
+                        </div>
+                    </div>
+                    <div class="field">
+                        <label class="resizer-label" for="p2iDpi">Resolution</label>
+                        <select id="p2iDpi" class="select-input">
+                            <option value="72">72 DPI &middot; small</option>
+                            <option value="150" selected>150 DPI &middot; standard</option>
+                            <option value="200">200 DPI &middot; sharp</option>
+                            <option value="300">300 DPI &middot; print</option>
+                        </select>
+                    </div>
+                    <div class="field">
+                        <label class="resizer-label" for="p2iQuality">JPG / WEBP quality <span id="p2iQualityVal">90%</span></label>
+                        <input id="p2iQuality" type="range" min="50" max="100" value="90" class="range-input">
+                    </div>
+                </div>
+            </div>
+
+            <div class="resizer-card">
+                <div class="card-head">
+                    <div>
+                        <h2 class="card-title">Pages <span id="p2iSelCount" class="card-sub"></span></h2>
+                        <span class="card-sub">Click pages to choose which ones to convert.</span>
+                    </div>
+                    <div class="toolbar-row">
+                        <button id="p2iAllBtn" type="button" class="action-btn"><span class="material-symbols-outlined" aria-hidden="true">select_all</span> All</button>
+                        <button id="p2iNoneBtn" type="button" class="action-btn"><span class="material-symbols-outlined" aria-hidden="true">deselect</span> None</button>
+                    </div>
+                </div>
+                <div id="p2iGrid" class="page-grid"></div>
+            </div>
+
+            <div class="resizer-card resizer-controls">
+                <div id="p2iProgress" class="progress is-hidden" aria-hidden="true"><span></span></div>
+                <button id="p2iRunBtn" type="button" class="action-btn primary resizer-run" disabled>
+                    <span class="material-symbols-outlined" aria-hidden="true">download</span> <span id="p2iRunLabel">Convert &amp; download</span>
+                </button>
+                <p class="resizer-hint">One page downloads as an image; several pages download together as a ZIP.</p>
+            </div>
+
+        </div>
+      </div>
+    </div>
+  </div>
+</main>
+
+<script src="shell.js"></script>
+<script src="common.js"></script>
+<script src="pdf-to-image.js"></script>
+<script>
+    window.va = window.va || function () { (window.vaq = window.vaq || []).push(arguments); };
+</script>
+<script defer src="/_vercel/insights/script.js"></script>
+</body>
+</html>

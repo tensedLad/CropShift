@@ -1,0 +1,136 @@
+<!DOCTYPE html>
+<html class="dark" lang="en">
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="description" content="Free OCR: copy text out of photos, screenshots, scanned notes and PDFs — processed in your browser, nothing is uploaded.">
+    <meta name="theme-color" content="#0f0f10">
+    <title>CropShift - Extract Text (OCR)</title>
+    <link rel="icon" type="image/svg+xml" href="logo.svg">
+    <link rel="apple-touch-icon" href="logo.svg">
+    <link href="https://fonts.googleapis.com/css2?family=Manrope:wght@400;500;600;700;800&family=Inter:wght@400;500;600&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&display=swap" rel="stylesheet">
+    <link href="styles.css" rel="stylesheet">
+</head>
+<body data-tool="extract-text">
+
+<nav>
+    <div>
+        <a class="brand-logo" href="./" aria-label="CropShift home">
+            <img src="logo.svg" alt="" aria-hidden="true">
+            <span>CropShift</span>
+        </a>
+        <div class="h-5"></div>
+        <span>Extract Text</span>
+    </div>
+</nav>
+
+<aside id="sidebar" class="pro-scrollbar"></aside>
+
+<main>
+  <div class="tool-screen">
+    <div class="pane-header">
+        <span class="pane-title">Extract Text (OCR)</span>
+        <span id="ocrStatus" class="pane-badge" role="status" aria-live="polite">Ready</span>
+    </div>
+
+    <div class="tool-pane pro-scrollbar">
+      <div class="resizer-panel is-wide">
+
+        <input id="ocrInput" type="file" accept="image/*,application/pdf,.pdf" multiple class="hidden" aria-label="Upload images or a PDF">
+
+        <button id="ocrDropzone" type="button" class="resizer-dropzone">
+            <span class="material-symbols-outlined" aria-hidden="true">text_snippet</span>
+            <strong>Drop, paste, or click to upload</strong>
+            <span class="resizer-dropzone-sub">Photos of notes, screenshots, scanned pages or a PDF &middot; paste a screenshot with Ctrl+V</span>
+        </button>
+
+        <div id="ocrWorkspace" class="resizer-workspace is-hidden">
+
+            <div class="resizer-card">
+                <div class="resizer-file-row">
+                    <span id="ocrFileIcon" class="material-symbols-outlined resizer-file-icon" aria-hidden="true">image</span>
+                    <div class="resizer-file-meta">
+                        <span id="ocrFileName" class="resizer-file-name">file</span>
+                        <span id="ocrFileInfo" class="resizer-file-info">&mdash;</span>
+                    </div>
+                    <button id="ocrChangeBtn" type="button" class="action-btn">
+                        <span class="material-symbols-outlined" aria-hidden="true">swap_horiz</span> Change
+                    </button>
+                </div>
+                <div id="ocrThumbWrap" class="resizer-thumb-wrap is-hidden">
+                    <img id="ocrThumb" alt="Preview of the uploaded image">
+                </div>
+            </div>
+
+            <div class="resizer-card resizer-controls">
+                <div class="field-grid">
+                    <div class="field">
+                        <label class="resizer-label" for="ocrLang">Text language</label>
+                        <select id="ocrLang" class="select-input">
+                            <option value="eng" selected>English</option>
+                            <option value="eng+hin">English + Hindi</option>
+                            <option value="hin">Hindi</option>
+                            <option value="ben">Bengali</option>
+                            <option value="mar">Marathi</option>
+                            <option value="tam">Tamil</option>
+                            <option value="tel">Telugu</option>
+                            <option value="guj">Gujarati</option>
+                            <option value="kan">Kannada</option>
+                            <option value="mal">Malayalam</option>
+                            <option value="pan">Punjabi</option>
+                            <option value="urd">Urdu</option>
+                            <option value="spa">Spanish</option>
+                            <option value="fra">French</option>
+                            <option value="deu">German</option>
+                            <option value="por">Portuguese</option>
+                            <option value="ita">Italian</option>
+                            <option value="rus">Russian</option>
+                            <option value="ara">Arabic</option>
+                            <option value="chi_sim">Chinese (Simplified)</option>
+                            <option value="jpn">Japanese</option>
+                            <option value="kor">Korean</option>
+                        </select>
+                    </div>
+                    <div id="ocrPdfOpts" class="field is-hidden">
+                        <span class="resizer-label">PDF text</span>
+                        <label class="check-row"><input id="ocrUseLayer" type="checkbox" checked> Use the PDF's own text when it has one (faster, exact)</label>
+                    </div>
+                </div>
+                <p class="resizer-hint">OCR runs on your device. The first run downloads the recognition engine and language data (a few MB), which your browser then caches.</p>
+                <div id="ocrProgress" class="progress is-hidden" aria-hidden="true"><span></span></div>
+                <button id="ocrRunBtn" type="button" class="action-btn primary resizer-run" disabled>
+                    <span class="material-symbols-outlined" aria-hidden="true">document_scanner</span> Extract text
+                </button>
+            </div>
+
+            <div id="ocrResult" class="resizer-card resizer-controls is-hidden">
+                <div class="card-head" style="margin-bottom:0">
+                    <div>
+                        <h2 class="card-title">Text</h2>
+                        <span id="ocrStats" class="card-sub"></span>
+                    </div>
+                    <div class="toolbar-row">
+                        <button id="ocrCopyBtn" type="button" class="action-btn"><span class="material-symbols-outlined" aria-hidden="true">content_copy</span> Copy</button>
+                        <button id="ocrSaveBtn" type="button" class="action-btn primary"><span class="material-symbols-outlined" aria-hidden="true">download</span> Save .txt</button>
+                    </div>
+                </div>
+                <label for="ocrOutput" class="hidden">Extracted text</label>
+                <textarea id="ocrOutput" class="output-area pro-scrollbar" spellcheck="false"></textarea>
+            </div>
+
+        </div>
+      </div>
+    </div>
+  </div>
+</main>
+
+<script src="shell.js"></script>
+<script src="common.js"></script>
+<script src="extract-text.js"></script>
+<script>
+    window.va = window.va || function () { (window.vaq = window.vaq || []).push(arguments); };
+</script>
+<script defer src="/_vercel/insights/script.js"></script>
+</body>
+</html>

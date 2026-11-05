@@ -204,6 +204,12 @@
         ? await compressPdfToTarget(R.file, targetBytes)
         : await compressImageToTarget(R.file, targetBytes);
 
+      // Re-encoding can come out larger than an already-small original; never
+      // hand back a bigger file when the original already meets the target.
+      if (result.blob.size >= R.file.size && R.file.size <= targetBytes) {
+        result.blob = R.file;
+        result.name = R.file.name;
+      }
       R.resultBlob = result.blob;
       R.resultName = result.name;
       showResult(R.file.size, result.blob.size, targetBytes);
@@ -334,7 +340,15 @@
   async function compressPdfToTarget(file, targetBytes) {
     await ensurePdfLibs();
     const buffer = await file.arrayBuffer();
-    const pdf = await window.pdfjsLib.getDocument({ data: buffer }).promise;
+    let pdf;
+    try {
+      pdf = await window.pdfjsLib.getDocument({ data: buffer }).promise;
+    } catch (err) {
+      if (err && err.name === "PasswordException") {
+        throw new Error("This PDF is password-protected. Remove the password with Unlock File first.");
+      }
+      throw new Error("This PDF could not be read. It may be damaged.");
+    }
     try {
       return await compressLoadedPdf(pdf, file, targetBytes);
     } finally {

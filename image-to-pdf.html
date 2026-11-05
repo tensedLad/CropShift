@@ -1,0 +1,142 @@
+<!DOCTYPE html>
+<html class="dark" lang="en">
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="description" content="Free image to PDF converter. Combine JPG, PNG and WEBP photos into one PDF, reorder and rotate pages — files never leave your browser.">
+    <meta name="theme-color" content="#0f0f10">
+    <title>CropShift - Image to PDF</title>
+    <link rel="icon" type="image/svg+xml" href="logo.svg">
+    <link rel="apple-touch-icon" href="logo.svg">
+    <link href="https://fonts.googleapis.com/css2?family=Manrope:wght@400;500;600;700;800&family=Inter:wght@400;500;600&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&display=swap" rel="stylesheet">
+    <link href="styles.css" rel="stylesheet">
+</head>
+<body data-tool="image-to-pdf">
+
+<nav>
+    <div>
+        <a class="brand-logo" href="./" aria-label="CropShift home">
+            <img src="logo.svg" alt="" aria-hidden="true">
+            <span>CropShift</span>
+        </a>
+        <div class="h-5"></div>
+        <span>Image to PDF</span>
+    </div>
+</nav>
+
+<aside id="sidebar" class="pro-scrollbar"></aside>
+
+<main>
+  <div class="tool-screen">
+    <div class="pane-header">
+        <span class="pane-title">Image to PDF</span>
+        <span id="i2pStatus" class="pane-badge" role="status" aria-live="polite">Ready</span>
+    </div>
+
+    <div id="i2pScroller" class="tool-pane pro-scrollbar">
+      <div class="resizer-panel is-wide">
+
+        <input id="i2pInput" type="file" accept="image/*" multiple class="hidden" aria-label="Add images">
+
+        <button id="i2pDropzone" type="button" class="resizer-dropzone">
+            <span class="material-symbols-outlined" aria-hidden="true">add_photo_alternate</span>
+            <strong>Drop, paste, or click to add images</strong>
+            <span class="resizer-dropzone-sub">JPG, PNG, WEBP, GIF, BMP &middot; add as many as you like, each becomes a page</span>
+        </button>
+
+        <div id="i2pWorkspace" class="resizer-workspace is-hidden">
+
+            <div class="resizer-card">
+                <div class="card-head">
+                    <div>
+                        <h2 class="card-title">Pages <span id="i2pCount" class="card-sub"></span></h2>
+                        <span class="card-sub">Drag the <span class="material-symbols-outlined" style="font-size:12px;vertical-align:-2px" aria-hidden="true">drag_indicator</span> handle to reorder.</span>
+                    </div>
+                    <div class="toolbar-row">
+                        <button id="i2pAddBtn" type="button" class="action-btn"><span class="material-symbols-outlined" aria-hidden="true">add</span> Add images</button>
+                        <button id="i2pSortBtn" type="button" class="action-btn"><span class="material-symbols-outlined" aria-hidden="true">sort_by_alpha</span> Sort by name</button>
+                        <button id="i2pClearBtn" type="button" class="action-btn"><span class="material-symbols-outlined" aria-hidden="true">delete</span> Clear</button>
+                    </div>
+                </div>
+                <div id="i2pGrid" class="page-grid"></div>
+            </div>
+
+            <div class="resizer-card resizer-controls">
+                <div class="field-grid">
+                    <div class="field">
+                        <label class="resizer-label" for="i2pPageSize">Page size</label>
+                        <select id="i2pPageSize" class="select-input">
+                            <option value="a4" selected>A4 (210 &times; 297 mm)</option>
+                            <option value="letter">US Letter</option>
+                            <option value="legal">US Legal</option>
+                            <option value="a5">A5</option>
+                            <option value="fit">Same as image</option>
+                        </select>
+                    </div>
+                    <div class="field">
+                        <span class="resizer-label" id="i2pOrientLabel">Orientation</span>
+                        <div id="i2pOrient" class="seg-group" role="group" aria-labelledby="i2pOrientLabel">
+                            <button type="button" class="format-btn" data-value="auto" aria-pressed="true">Auto</button>
+                            <button type="button" class="format-btn" data-value="portrait" aria-pressed="false">Portrait</button>
+                            <button type="button" class="format-btn" data-value="landscape" aria-pressed="false">Landscape</button>
+                        </div>
+                    </div>
+                    <div class="field">
+                        <span class="resizer-label" id="i2pMarginLabel">Margin</span>
+                        <div id="i2pMargin" class="seg-group" role="group" aria-labelledby="i2pMarginLabel">
+                            <button type="button" class="format-btn" data-value="0" aria-pressed="true">None</button>
+                            <button type="button" class="format-btn" data-value="18" aria-pressed="false">Small</button>
+                            <button type="button" class="format-btn" data-value="40" aria-pressed="false">Large</button>
+                        </div>
+                    </div>
+                    <div class="field">
+                        <span class="resizer-label" id="i2pQualityLabel">Quality</span>
+                        <div id="i2pQuality" class="seg-group" role="group" aria-labelledby="i2pQualityLabel">
+                            <button type="button" class="format-btn" data-value="high" aria-pressed="false">Best</button>
+                            <button type="button" class="format-btn" data-value="balanced" aria-pressed="true">Balanced</button>
+                            <button type="button" class="format-btn" data-value="small" aria-pressed="false">Small file</button>
+                        </div>
+                    </div>
+                    <div class="field">
+                        <label class="resizer-label" for="i2pName">File name</label>
+                        <input id="i2pName" type="text" class="text-input" value="images" spellcheck="false" autocomplete="off">
+                    </div>
+                </div>
+
+                <button id="i2pRunBtn" type="button" class="action-btn primary resizer-run" disabled>
+                    <span class="material-symbols-outlined" aria-hidden="true">picture_as_pdf</span> Create PDF
+                </button>
+            </div>
+
+            <div id="i2pResult" class="resizer-card resizer-result is-hidden">
+                <div class="resizer-result-grid">
+                    <div class="resizer-stat">
+                        <span class="resizer-stat-label">Pages</span>
+                        <span id="i2pResultPages" class="resizer-stat-value">&mdash;</span>
+                    </div>
+                    <div class="resizer-stat">
+                        <span class="resizer-stat-label">PDF size</span>
+                        <span id="i2pResultSize" class="resizer-stat-value resizer-stat-accent">&mdash;</span>
+                    </div>
+                </div>
+                <button id="i2pDownloadBtn" type="button" class="action-btn primary resizer-run">
+                    <span class="material-symbols-outlined" aria-hidden="true">download</span> Download PDF
+                </button>
+            </div>
+
+        </div>
+      </div>
+    </div>
+  </div>
+</main>
+
+<script src="shell.js"></script>
+<script src="common.js"></script>
+<script src="image-to-pdf.js"></script>
+<script>
+    window.va = window.va || function () { (window.vaq = window.vaq || []).push(arguments); };
+</script>
+<script defer src="/_vercel/insights/script.js"></script>
+</body>
+</html>

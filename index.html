@@ -129,6 +129,7 @@
                             <button type="button" data-format="image/jpeg" data-ext="jpeg" aria-pressed="false" class="format-btn">JPEG</button>
                             <button type="button" data-format="image/png" data-ext="png" aria-pressed="false" class="format-btn">PNG</button>
                             <button type="button" data-format="image/webp" data-ext="webp" aria-pressed="false" class="format-btn">WEBP</button>
+                            <button type="button" data-format="application/pdf" data-ext="pdf" aria-pressed="false" class="format-btn" title="Save the scan as a PDF page">PDF</button>
                         </div>
                     </div>
 
@@ -160,6 +161,17 @@
                 </div>
 
                 <div class="export-actions">
+                    <div id="scanPagesGroup" class="scan-pages is-hidden" role="group" aria-label="Multi-page PDF">
+                        <button id="savePagesButton" type="button" class="action-btn" title="Download all collected pages as one PDF">
+                            <span class="material-symbols-outlined">picture_as_pdf</span> <span id="savePagesLabel">PDF (0)</span>
+                        </button>
+                        <button id="clearPagesButton" type="button" class="action-btn" title="Discard the collected pages" aria-label="Discard collected pages">
+                            <span class="material-symbols-outlined">close</span>
+                        </button>
+                    </div>
+                    <button id="addPageButton" disabled class="action-btn" title="Add this scan as a page of a multi-page PDF, then load the next image">
+                        <span class="material-symbols-outlined">library_add</span> Add page
+                    </button>
                     <button id="copyButton" disabled class="action-btn" title="Copy the corrected image to the clipboard">
                         <span class="material-symbols-outlined">content_copy</span> Copy
                     </button>
@@ -175,6 +187,7 @@
 </main>
 
 <script src="shell.js"></script>
+<script src="common.js"></script>
 <script src="app.js"></script>
 <script>
     window.va = window.va || function () { (window.vaq = window.vaq || []).push(arguments); };

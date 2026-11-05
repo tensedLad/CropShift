@@ -1,0 +1,157 @@
+<!DOCTYPE html>
+<html class="dark" lang="en">
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="description" content="Free online PDF editor that runs in your browser. Add text, draw, highlight, white-out, insert images and sign PDFs — nothing is uploaded.">
+    <meta name="theme-color" content="#0f0f10">
+    <title>CropShift - Edit PDF</title>
+    <link rel="icon" type="image/svg+xml" href="logo.svg">
+    <link rel="apple-touch-icon" href="logo.svg">
+    <link href="https://fonts.googleapis.com/css2?family=Manrope:wght@400;500;600;700;800&family=Inter:wght@400;500;600&family=Caveat:wght@600&family=Dancing+Script:wght@600&family=Great+Vibes&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&display=swap" rel="stylesheet">
+    <link href="styles.css" rel="stylesheet">
+</head>
+<body data-tool="edit-pdf">
+
+<nav>
+    <div>
+        <a class="brand-logo" href="./" aria-label="CropShift home">
+            <img src="logo.svg" alt="" aria-hidden="true">
+            <span>CropShift</span>
+        </a>
+        <div class="h-5"></div>
+        <span>Edit PDF</span>
+    </div>
+</nav>
+
+<aside id="sidebar" class="pro-scrollbar"></aside>
+
+<main>
+  <div class="tool-screen">
+    <div class="pane-header">
+        <span class="pane-title">Edit PDF <span id="peFileLabel" class="pe-file-label"></span></span>
+        <span id="peStatus" class="pane-badge" role="status" aria-live="polite">Ready</span>
+    </div>
+
+    <input id="peFileInput" type="file" accept="application/pdf,.pdf" class="hidden" aria-label="Open a PDF">
+    <input id="peImageInput" type="file" accept="image/*" class="hidden" aria-label="Insert an image">
+
+    <div id="peStart" class="tool-pane pro-scrollbar">
+      <div class="resizer-panel">
+        <button id="peDropzone" type="button" class="resizer-dropzone">
+            <span class="material-symbols-outlined" aria-hidden="true">edit_document</span>
+            <strong>Drop, paste, or click to open a PDF</strong>
+            <span class="resizer-dropzone-sub">Add text, draw, highlight, white-out, insert images, sign &mdash; then download</span>
+        </button>
+        <div class="resizer-card">
+            <ul class="pe-feature-list">
+                <li><span class="material-symbols-outlined" aria-hidden="true">title</span> Type anywhere: fill forms, add answers or notes</li>
+                <li><span class="material-symbols-outlined" aria-hidden="true">draw</span> Draw, underline and highlight with pen or marker</li>
+                <li><span class="material-symbols-outlined" aria-hidden="true">ink_eraser</span> White-out mistakes (for real redaction, also save as Images)</li>
+                <li><span class="material-symbols-outlined" aria-hidden="true">signature</span> Sign by drawing or typing your name</li>
+                <li><span class="material-symbols-outlined" aria-hidden="true">image</span> Insert photos, stamps or logos</li>
+                <li><span class="material-symbols-outlined" aria-hidden="true">rotate_right</span> Rotate or remove pages, then save as PDF or images</li>
+            </ul>
+        </div>
+      </div>
+    </div>
+
+    <div id="peEditor" class="pe-editor is-hidden" data-tool="select">
+        <div class="pe-toolbar" role="toolbar" aria-label="Editing tools">
+            <div id="peTools" class="pe-group seg-group" role="group" aria-label="Tool">
+                <button type="button" class="pe-tool" data-tool="select" aria-pressed="true" title="Select &amp; move (V)" aria-label="Select and move"><span class="material-symbols-outlined" aria-hidden="true">arrow_selector_tool</span></button>
+                <button type="button" class="pe-tool" data-tool="text" aria-pressed="false" title="Add text (T)" aria-label="Add text"><span class="material-symbols-outlined" aria-hidden="true">title</span></button>
+                <button type="button" class="pe-tool" data-tool="draw" aria-pressed="false" title="Draw (D)" aria-label="Draw"><span class="material-symbols-outlined" aria-hidden="true">draw</span></button>
+                <button type="button" class="pe-tool" data-tool="highlight" aria-pressed="false" title="Highlight (H)" aria-label="Highlight"><span class="material-symbols-outlined" aria-hidden="true">ink_highlighter</span></button>
+                <button type="button" class="pe-tool" data-tool="rect" aria-pressed="false" title="Rectangle (R)" aria-label="Rectangle"><span class="material-symbols-outlined" aria-hidden="true">rectangle</span></button>
+                <button type="button" class="pe-tool" data-tool="whiteout" aria-pressed="false" title="White-out (W). Covers content visually; text underneath stays in the PDF unless you save as Images." aria-label="White-out"><span class="material-symbols-outlined" aria-hidden="true">ink_eraser</span></button>
+                <button type="button" class="pe-tool" data-tool="image" aria-pressed="false" title="Insert image (I)" aria-label="Insert image"><span class="material-symbols-outlined" aria-hidden="true">add_photo_alternate</span></button>
+                <button type="button" class="pe-tool" data-tool="sign" aria-pressed="false" title="Signature (S)" aria-label="Add signature"><span class="material-symbols-outlined" aria-hidden="true">signature</span></button>
+            </div>
+
+            <div class="pe-group" id="peStyleGroup">
+                <div id="peSwatches" class="pe-swatches" role="group" aria-label="Color"></div>
+                <input id="peColor" type="color" class="color-input pe-color" value="#111827" aria-label="Custom color" title="Custom color">
+                <label class="pe-size-label" for="peSize" id="peSizeLabel">Size</label>
+                <input id="peSize" type="number" min="1" max="200" value="14" class="pe-size" aria-labelledby="peSizeLabel">
+                <select id="peFont" class="select-input pe-font" aria-label="Font">
+                    <option value="helv" selected>Sans</option>
+                    <option value="times">Serif</option>
+                    <option value="courier">Mono</option>
+                </select>
+                <button id="peBold" type="button" class="pe-tool" aria-pressed="false" title="Bold" aria-label="Bold"><span class="material-symbols-outlined" aria-hidden="true">format_bold</span></button>
+            </div>
+
+            <div class="pe-group">
+                <button id="peUndo" type="button" class="pe-tool" title="Undo (Ctrl+Z)" aria-label="Undo" disabled><span class="material-symbols-outlined" aria-hidden="true">undo</span></button>
+                <button id="peRedo" type="button" class="pe-tool" title="Redo (Ctrl+Y)" aria-label="Redo" disabled><span class="material-symbols-outlined" aria-hidden="true">redo</span></button>
+                <button id="peDelete" type="button" class="pe-tool" title="Delete selected (Del)" aria-label="Delete selected" disabled><span class="material-symbols-outlined" aria-hidden="true">delete</span></button>
+            </div>
+
+            <div class="pe-group">
+                <button id="peZoomOut" type="button" class="pe-tool" title="Zoom out" aria-label="Zoom out"><span class="material-symbols-outlined" aria-hidden="true">zoom_out</span></button>
+                <button id="peZoomFit" type="button" class="pe-zoom-label" title="Fit to width" aria-label="Fit to width"><span id="peZoomLabel">100%</span></button>
+                <button id="peZoomIn" type="button" class="pe-tool" title="Zoom in" aria-label="Zoom in"><span class="material-symbols-outlined" aria-hidden="true">zoom_in</span></button>
+            </div>
+
+            <div class="pe-group pe-save">
+                <button id="peOpenBtn" type="button" class="action-btn" title="Open another PDF"><span class="material-symbols-outlined" aria-hidden="true">folder_open</span> Open</button>
+                <button id="peSaveImgBtn" type="button" class="action-btn" title="Download pages as JPG images"><span class="material-symbols-outlined" aria-hidden="true">photo_library</span> Images</button>
+                <button id="peSaveBtn" type="button" class="action-btn primary"><span class="material-symbols-outlined" aria-hidden="true">download</span> Download PDF</button>
+            </div>
+        </div>
+
+        <div id="peScroll" class="pe-scroll pro-scrollbar">
+            <div id="pePages" class="pe-pages"></div>
+        </div>
+    </div>
+  </div>
+</main>
+
+<!-- Signature dialog -->
+<div id="peSigModal" class="cs-modal is-hidden" role="dialog" aria-modal="true" aria-labelledby="peSigTitle">
+    <div class="cs-modal-card">
+        <div class="card-head" style="margin-bottom:0">
+            <h2 id="peSigTitle" class="card-title">Add signature</h2>
+            <button id="peSigClose" type="button" class="icon-btn" aria-label="Close"><span class="material-symbols-outlined" aria-hidden="true">close</span></button>
+        </div>
+        <div id="peSigMode" class="seg-group" role="group" aria-label="Signature type">
+            <button type="button" class="format-btn" data-value="draw" aria-pressed="true">Draw</button>
+            <button type="button" class="format-btn" data-value="type" aria-pressed="false">Type</button>
+        </div>
+        <div id="peSigDrawPanel" class="mode-panel">
+            <canvas id="peSigPad" class="sig-pad" aria-label="Signature drawing area"></canvas>
+            <span class="card-sub">Sign with your mouse, finger or stylus.</span>
+        </div>
+        <div id="peSigTypePanel" class="mode-panel is-hidden">
+            <input id="peSigName" type="text" class="text-input" placeholder="Type your name" autocomplete="name" spellcheck="false">
+            <div id="peSigFonts" class="seg-group" role="group" aria-label="Signature style">
+                <button type="button" class="format-btn sig-font-btn" data-value="Dancing Script" aria-pressed="true" style="font-family:'Dancing Script',cursive;text-transform:none;font-size:.95rem">Signature</button>
+                <button type="button" class="format-btn sig-font-btn" data-value="Great Vibes" aria-pressed="false" style="font-family:'Great Vibes',cursive;text-transform:none;font-size:1rem">Signature</button>
+                <button type="button" class="format-btn sig-font-btn" data-value="Caveat" aria-pressed="false" style="font-family:'Caveat',cursive;text-transform:none;font-size:1rem">Signature</button>
+            </div>
+            <canvas id="peSigTypePreview" class="sig-pad" aria-label="Typed signature preview"></canvas>
+        </div>
+        <div class="toolbar-row" style="justify-content:space-between">
+            <div class="toolbar-row">
+                <div id="peSigColors" class="seg-group" role="group" aria-label="Ink color">
+                    <button type="button" class="format-btn" data-value="#111827" aria-pressed="true">Black</button>
+                    <button type="button" class="format-btn" data-value="#1d3fbf" aria-pressed="false">Blue</button>
+                </div>
+                <button id="peSigClear" type="button" class="action-btn"><span class="material-symbols-outlined" aria-hidden="true">backspace</span> Clear</button>
+            </div>
+            <button id="peSigUse" type="button" class="action-btn primary"><span class="material-symbols-outlined" aria-hidden="true">check</span> Place signature</button>
+        </div>
+    </div>
+</div>
+
+<script src="shell.js"></script>
+<script src="common.js"></script>
+<script src="edit-pdf.js"></script>
+<script>
+    window.va = window.va || function () { (window.vaq = window.vaq || []).push(arguments); };
+</script>
+<script defer src="/_vercel/insights/script.js"></script>
+</body>
+</html>
